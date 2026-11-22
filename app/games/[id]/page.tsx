@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import BackLink from '../../components/BackLink';
 import DiscountChart from '../../components/DiscountChart';
 import { getPriceInfo, getLowestTiming, PRICE_TYPE_LABEL } from '../../lib/price';
+import { isFriendslop, FS_LABEL, FS_TIP } from '../../lib/friendslop';
 import { playTime, hoursText } from '../../lib/playTime';
 import { isComingSoon, hasDemo, comingSoonLabel, hasReleaseDate, demoStoreUrl, releaseTile } from '../../lib/release';
 import { formatDate } from '../../lib/date';
@@ -258,6 +259,8 @@ export default async function GameDetail({ params }: { params: Promise<{ id: str
   const comingSoon = isComingSoon(game);
   const demo = hasDemo(game);
   const price = comingSoon ? null : getPriceInfo(game);
+  // 우당탕 협동 배지 — 목록과 같은 판정(lib/friendslop). games.friendslop 칸이 아직 없으면 자동 기준만
+  const friendslop = isFriendslop({ ...game, price: getPriceInfo(game)?.final ?? null });
   // 100원 미만은 잘못 들어온 기록이라 할인 전적에서 제외
   const priceHistory = (game.price_history || []).filter((p: any) => p.price >= 100);
   // 무료·가격 유형 게임(월 구독·판매처에서 확인)은 역대 최저·할인 그래프를 숨김 (기록은 DB에 그대로)
@@ -453,6 +456,7 @@ export default async function GameDetail({ params }: { params: Promise<{ id: str
                     {game.release_date && <span>출시 <span className="num">{formatDate(game.release_date)}</span></span>}
                   </>}
               {game.category && <span className="gd-badge">{game.category}</span>}
+              {friendslop && <span className="gd-fs-badge" title={FS_TIP}>{FS_LABEL}</span>}
             </span>
             <h1 className="gd-title">{gameName(game)}</h1>
             {game.fun_description && <p className="gd-lead">{game.fun_description}</p>}

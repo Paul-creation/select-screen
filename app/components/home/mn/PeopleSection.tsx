@@ -24,16 +24,16 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
   const { n, myPcOn, setMyPcOn, chips } = usePeople();
   const { pc, ready } = useMyPc();
   const myPcActive = ready && !!pc && myPcOn;
-  const chipOn = chips.free || chips.demo || chips.sale;
+  const chipOn = chips.free || chips.demo || chips.sale || chips.fs;
   const { games, filteredOut } = useMemo(() => {
     if (!recs) return { games: [], filteredOut: false };
     const user = myPcActive && pc ? toUserPc(pc) : null;
     const pool = recs.ids[n].map((id) => recs.games[id]).filter((g) =>
-      (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0));
+      (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0) && (!chips.fs || g.fs === true));
     return choosePeopleGames(pool, user ? (g) => runsOnMyPc(user, g) : null, SHOW);
   }, [recs, n, myPcActive, pc, chips]);
   // 지금 켜진 칩을 검색 주소에 그대로 실어 "전체 보기"가 같은 조건으로 열리게
-  const chipQuery = `${chips.free ? '&price=0-0' : ''}${chips.sale ? '&sale=1' : ''}${chips.demo ? '&demo=1' : ''}`;
+  const chipQuery = `${chips.free ? '&price=0-0' : ''}${chips.sale ? '&sale=1' : ''}${chips.demo ? '&demo=1' : ''}${chips.fs ? '&fs=1' : ''}`;
   const allHref = `${peopleHref(n, myPcActive)}${chipQuery}`;
   // 추천 데이터가 없어도 머리(제목 + 인원 탭)는 그린다 — 탭이 그 인원의 검색 결과로 가는 길이라서
   return (

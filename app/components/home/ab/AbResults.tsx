@@ -18,6 +18,7 @@ import { gameName } from '../../../lib/gameName';
 import { isComingSoon, comingSoonLabel } from '../../../lib/release';
 import { summaryParts } from '../../../lib/abSearch';
 import Loader from '../../status/Loader';
+import FriendslopChip from '../../FriendslopChip';
 import ShareButton from '../../ShareButton';
 import '../mn/mn.css';
 import { PAGE_SIZE } from '../../../lib/useGameFilters';
@@ -62,9 +63,9 @@ export default function AbResults() {
         <aside className="find-filter" aria-label="더 좁히기">
           <p className="sec-label">더 좁히기</p>
           <div className="ab-opts" role="group" aria-label="조건">
-            {OPTS.map((o) => (
-              <button key={o.key} type="button" className="mn-chip" aria-pressed={q.opts.includes(o.key)} onClick={() => toggleOpt(o.key)}>{o.label}</button>
-            ))}
+            {OPTS.map((o) => o.key === 'fs'
+              ? <FriendslopChip key={o.key} className="mn-chip" pressed={q.opts.includes('fs')} onToggle={() => toggleOpt('fs')} />
+              : <button key={o.key} type="button" className="mn-chip" aria-pressed={q.opts.includes(o.key)} onClick={() => toggleOpt(o.key)}>{o.label}</button>)}
           </div>
         </aside>
 
