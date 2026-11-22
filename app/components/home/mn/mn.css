@@ -199,19 +199,19 @@ button.sec-more { padding: 0; font-family: inherit; background: none; border: 0;
 .mn-col-panel, .mn-curator-text { display: contents; }
 
 /* ---------- 메인 v2 ---------- */
-/* 방문자 히어로 — 높이 640px(헤더 포함, 헤더는 이미지 위에 absolute), 내용은 위에서 236px 아래부터: 제목(60px) → 한 줄 설명(17px) → 검색창, 요소 간격 32px, 아래 72px
-   이미지는 Steam library_hero 1장(object-fit: cover, 가운데). 마스크 = 좌우(양 끝 22%를 --bg-top으로) + 위아래(위 16%까지 헤더용 어둡게, 45%부터 아래로 점점 --bg-top) — 아래 "N인 추천"과 경계 없이 이어진다 */
-.mn-hero { position: relative; box-sizing: border-box; height: 640px; padding: 236px 0 72px; text-align: center; }
+/* 방문자 히어로 — 높이 최소 704px(헤더 포함, 헤더는 이미지 위에 absolute), 내용은 위에서 300px 아래부터: 제목(60px) → 한 줄 설명(17px) → 검색창, 요소 간격 32px, 아래 72px
+   이미지는 Steam library_hero 1장(object-fit: cover, 가운데). 마스크 = 좌우(양 끝 22%를 --bg-top으로) + 위아래(위 16%까지 헤더용 어둡게, 28%부터 56%에서 .72, 86%에서 --bg-top) — 아래 "N인 추천"과 경계 없이 이어진다 */
+.mn-hero { position: relative; box-sizing: border-box; min-height: 704px; padding: 300px 0 72px; text-align: center; }
 .mn-hero .mn-hero-media { display: block; position: absolute; inset: 0; z-index: -1; overflow: hidden; background: var(--bg-top); }
-.mn-hero .mn-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.mn-hero .mn-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(0.7) saturate(0.85); }
 /* 글자 아래 어두운 층 — 이미지 위·글자 아래. 가운데(제목·검색창 자리)만 어둡게 해서 밝은 이미지에서도 글자가 읽히게 */
 .mn-hero .mn-hero-scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 46% 34% at 50% 60%, rgba(20, 19, 17, .72) 0%, rgba(20, 19, 17, .35) 55%, transparent 100%); }
 .mn-hero::before, .mn-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .mn-hero::before { background: linear-gradient(90deg, var(--bg-top) 0%, transparent 22%, transparent 78%, var(--bg-top) 100%); }
-.mn-hero::after { background: linear-gradient(180deg, rgba(20, 19, 17, .55) 0%, transparent 16%, transparent 45%, rgba(20, 19, 17, .85) 80%, var(--bg-top) 100%); }
+.mn-hero::after { background: linear-gradient(180deg, rgba(20, 19, 17, .55) 0%, rgba(20, 19, 17, 0) 16%, rgba(20, 19, 17, 0) 28%, rgba(20, 19, 17, .72) 56%, var(--bg-top) 86%); }
 .mn-hero-inner { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%; }
 .mn-hero .mn-intro { display: flex; flex-direction: column; align-items: center; gap: 32px; }
-.mn-hero .mn-h1 { margin: 0; text-shadow: 0 2px 24px rgba(0, 0, 0, .45); }
+.mn-hero .mn-h1 { margin: 0; text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
 .mn-hero-sub { margin: 0; font-size: 17px; font-weight: 500; line-height: 1.5; color: var(--ink-nav); word-break: keep-all; }
 /* 오른쪽 가장자리 세로 글씨 — 폭 16px 칸 안에서 가운데 정렬한 뒤 -90도 회전(칸 밖으로 넘치는 만큼은 위아래로 고르게) */
 .mn-hero-credit { position: absolute; top: 0; right: 16px; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: center; width: 16px; pointer-events: none; }

@@ -21,6 +21,10 @@ async function mergedGameRedirects() {
 
 const nextConfig: NextConfig = {
   redirects: mergedGameRedirects,
+  // 로그인 사용자용 메인(/home-member, proxy.ts가 / 요청을 다시 써 줌) — 방문자 메인이 CDN에 캐시된 것과 섞이지 않게 공유 캐시에 저장하지 않는다
+  async headers() {
+    return [{ source: '/home-member', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] }];
+  },
   // Vercel 이미지 변환(무료 한도) 안 씀 — 스팀은 CDN 크기별 이미지, 에픽은 CDN 파라미터로 줄여 받는다 (components/GameImage)
   images: { unoptimized: true },
   // 공유 미리보기 이미지에서 쓰는 한글 글꼴을 배포 파일에 포함
