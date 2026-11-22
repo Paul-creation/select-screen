@@ -456,7 +456,7 @@ export default async function GameDetail({ params }: { params: Promise<{ id: str
                     {game.release_date && <span>출시 <span className="num">{formatDate(game.release_date)}</span></span>}
                   </>}
               {game.category && <span className="gd-badge">{game.category}</span>}
-              {friendslop && <span className="gd-fs-badge" title={FS_TIP}>{FS_LABEL}</span>}
+              {friendslop && <Link href="/friendslop" className="gd-fs-badge" title={FS_TIP}>{FS_LABEL}</Link>}
             </span>
             <h1 className="gd-title">{gameName(game)}</h1>
             {game.fun_description && <p className="gd-lead">{game.fun_description}</p>}

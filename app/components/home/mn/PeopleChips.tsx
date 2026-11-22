@@ -1,7 +1,6 @@
 'use client';
 
-import MyPcLink from '../../pcspec/MyPcLink';
-import { useMyPc } from '../../pcspec/useMyPc';
+import MyPcChip from './MyPcChip';
 import { usePeople, type ChipKey } from '../PeopleContext';
 import FriendslopChip from '../../FriendslopChip';
 
@@ -16,17 +15,9 @@ const CHIPS: { key: Exclude<ChipKey, 'fs'>; label: string }[] = [
 
 export default function PeopleChips() {
   const { myPcOn, setMyPcOn, chips, toggleChip } = usePeople();
-  const { pc, ready } = useMyPc();
   return (
     <div className="mn-chips" role="group" aria-label="추천 게임 거르기">
-      {/* 사양은 이 브라우저(localStorage)에만 있어서 서버는 토글인지 등록 링크인지 모른다 — 읽기 전에는 같은 글자의 보이지 않는 칩으로 자리를 잡아 칩 줄이 다시 정렬되지 않게 */}
-      {!ready ? (
-        <span className="mn-chip" style={{ visibility: 'hidden' }} aria-hidden="true">내 PC OK</span>
-      ) : pc ? (
-        <button type="button" className="mn-chip" aria-pressed={myPcOn} onClick={() => setMyPcOn(!myPcOn)}>내 PC OK</button>
-      ) : (
-        <MyPcLink className="mn-chip">내 PC OK</MyPcLink>
-      )}
+      <MyPcChip on={myPcOn} onToggle={() => setMyPcOn(!myPcOn)} />
       {CHIPS.map((c) => (
         <button key={c.key} type="button" className="mn-chip" aria-pressed={chips[c.key]} onClick={() => toggleChip(c.key)}>{c.label}</button>
       ))}

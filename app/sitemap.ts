@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITE_URL },
     { url: `${SITE_URL}/this-week` },
+    { url: `${SITE_URL}/friendslop` },
     ...['/guide', '/about', '/faq'].map((p) => ({ url: `${SITE_URL}${p}` })),
     ...['/privacy', '/terms'].map((p) => ({ url: `${SITE_URL}${p}` })),
     ...['', ...BOARD_KEYS.map((b) => `/${b}`)].map((p) => ({ url: `${SITE_URL}/community${p}` })),
