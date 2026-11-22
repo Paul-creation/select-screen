@@ -58,3 +58,11 @@ test('신호: voice_chat이거나 (코미디 태그 AND 공포 신호). 한쪽�
   assert.equal(isFriendslop({ ...base, activities_confirmed: ['horror_scare'] }), false);
   assert.equal(isFriendslop({ ...base, themes: ['Comedy', 'Horror'] }), false);
 });
+
+test('topFriendslop: 인기순(heat_rank 낮은 순, 없으면 맨 뒤) 상위 limit개, 조건(fits) 밖은 뺀다', async () => {
+  const { topFriendslop } = await import('./friendslop.ts');
+  const g = [{ id: 'c', heat_rank: 30 }, { id: 'a', heat_rank: 10 }, { id: 'n', heat_rank: null }, { id: 'b', heat_rank: 20 }, { id: 'x', heat_rank: 1 }];
+  assert.deepEqual(topFriendslop(g, (v) => v.id !== 'x', 3).map((v) => v.id), ['a', 'b', 'c']);
+  assert.deepEqual(topFriendslop(g, (v) => v.id !== 'x').map((v) => v.id), ['a', 'b', 'c', 'n']); // 6개 미만이면 있는 만큼
+  assert.deepEqual(topFriendslop([], () => true), []);
+});

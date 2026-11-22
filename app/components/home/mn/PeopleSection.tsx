@@ -28,8 +28,9 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
   const { games, filteredOut } = useMemo(() => {
     if (!recs) return { games: [], filteredOut: false };
     const user = myPcActive && pc ? toUserPc(pc) : null;
-    const pool = recs.ids[n].map((id) => recs.games[id]).filter((g) =>
-      (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0) && (!chips.fs || g.fs === true));
+    // 우당탕 협동 칩: 후보 8개가 아니라 서버가 전체에서 고른 이 인원 탭의 인기순 6개(recs.fs). 다른 칩은 그 위에 그대로 건다
+    const pool = (chips.fs ? recs.fs[n] : recs.ids[n]).map((id) => recs.games[id]).filter((g) =>
+      (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0));
     return choosePeopleGames(pool, user ? (g) => runsOnMyPc(user, g) : null, SHOW);
   }, [recs, n, myPcActive, pc, chips]);
   // 지금 켜진 칩을 검색 주소에 그대로 실어 "전체 보기"가 같은 조건으로 열리게

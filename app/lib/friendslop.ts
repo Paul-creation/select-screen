@@ -27,6 +27,15 @@ export type FriendslopInput = {
   activities_confirmed?: string[] | null;
 };
 
+// 메인 "N인 추천"의 우당탕 협동 칩 — 후보(trending 8개)가 아니라 전체에서, 그 인원 탭에 맞고(fits) friendslop인 게임을 인기순(heat_rank 낮은 순, 없으면 맨 뒤)으로 limit개
+export const FS_PEOPLE_SHOW = 6;
+export function topFriendslop<T extends { id: string; heat_rank?: number | null }>(games: T[], fits: (g: T) => boolean, limit = FS_PEOPLE_SHOW): T[] {
+  return games
+    .filter(fits)
+    .sort((a, b) => (a.heat_rank ?? Infinity) - (b.heat_rank ?? Infinity) || a.id.localeCompare(b.id))
+    .slice(0, limit);
+}
+
 export function isFriendslop(g: FriendslopInput): boolean {
   if (g.friendslop === true) return true;
   if (g.friendslop === false) return false;
