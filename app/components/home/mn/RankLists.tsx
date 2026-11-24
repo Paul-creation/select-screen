@@ -19,7 +19,7 @@ function Row({ row, rank }: { row: ListRow; rank: number }) {
     <li>
       <GameLink href={`/games/${row.id}`} className="mn-rank-row">
         <span className="mn-rank-n">{rank}</span>
-        <span className="mn-mini"><PosterImage cover={row.cover} /></span>
+        <span className="mn-mini sb-host"><PosterImage cover={row.cover} brackets /></span>
         <span className="mn-rank-text">
           <span className="mn-rank-name">{row.name}</span>
           {row.sub.length > 0 && <span className="mn-rank-sub">{row.sub.join(' · ')}</span>}

@@ -37,7 +37,7 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
   const allHref = `${peopleHref(n, myPcActive)}${chipQuery}`;
   // 추천 데이터가 없어도 머리(제목 + 인원 탭)는 그린다 — 탭이 그 인원의 검색 결과로 가는 길이라서
   return (
-    <section className="mn-sec" aria-labelledby="mn-people-title">
+    <section className="mn-sec mn-sec-people" aria-labelledby="mn-people-title">
       {/* 머리 한 줄: 제목 → 인원 탭 → 세로 구분선 → 빠른 필터 칩 → 맨 오른쪽 "더 보기 →" (좁으면 줄바꿈) */}
       <div className="mn-people-head">
         <div className="mn-people-top">
@@ -56,7 +56,7 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
       )}
       {!recs ? null : games.length > 0 ? (
         <ul className="mn-grid mn-grid-people" aria-label={`${peopleLabel(n)} 추천 게임 목록`}>
-          {games.map((g, i) => <li key={g.id}><PosterCard brackets compact game={g} eager={i < 3} tourId={i === 0 ? 'first-card' : undefined} badge={posterBadge(g, recs.badges[g.id])} /></li>)}
+          {games.map((g, i) => <li key={g.id}><PosterCard compact game={g} eager={i < 3} tourId={i === 0 ? 'first-card' : undefined} badge={posterBadge(g, recs.badges[g.id])} /></li>)}
         </ul>
       ) : (
         <p className="mn-note">

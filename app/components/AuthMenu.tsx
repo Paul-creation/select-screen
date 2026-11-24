@@ -33,6 +33,14 @@ const loadMe = () => (meRequest ??= fetch('/api/me', { cache: 'no-store', creden
   .catch(() => null)
   .then((m) => { writeCache(m); meRequest = null; return m; }));
 
+// 스팀 닉네임 — 캐시(sessionStorage)에 있으면 그것, 없으면 /api/me (헤더와 같은 요청을 공유). 로그인 안 했거나 실패하면 ''
+export async function fetchMyName(): Promise<string> {
+  if (!hasLoggedInCookie()) return '';
+  const cached = readCache();
+  const me = cached !== undefined ? cached : await loadMe();
+  return me?.persona_name || '';
+}
+
 // variant="drawer": 모바일 드로어 맨 아래 — 버튼 전체 폭, 메뉴는 버튼 위에 펼침, 안내 문구는 헤더 쪽 인스턴스만 그린다
 export default function AuthMenu({ variant = 'header' }: { variant?: 'header' | 'drawer' }) {
   const drawer = variant === 'drawer';
@@ -85,10 +93,13 @@ export default function AuthMenu({ variant = 'header' }: { variant?: 'header' | 
 
   const logout = async () => {
     setOpen(false);
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch {}
+    // 303 응답을 따라가 메인을 또 받지 않게 redirect: 'manual'. 쿠키는 이 응답에서 이미 지워진다
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', redirect: 'manual' }); } catch {}
     clearCache();
     clearOwnedCache();
     setMe(null);
+    // 새로 불러와서 로그인 후 화면이 남지 않고 바로 로그인 전 메인이 보이게 (뒤로 가기·브라우저 캐시 포함)
+    window.location.replace('/');
   };
 
   // 내 정보 삭제 — 확인 창 뒤 서버가 세션의 사용자 행을 지우고 쿠키도 지운다. 성공하면 브라우저에 남은 로그인 기억(sessionStorage)도 비운다
