@@ -35,6 +35,7 @@ export function parseRevalidateBody(body: unknown): { ok: true; value: Revalidat
 
 export function pathsToRevalidate({ ids, curators }: RevalidateTargets): string[] {
   const paths = ids.map((id) => `/games/${id}`);
+  if (ids.length) paths.push('/friendslop'); // 가격·할인이 바뀐 게임이 있으면 모음 페이지도 (데일리 갱신 끝에 호출됨)
   if (curators.length) paths.push(...curators.map((h) => `/c/${h}`), '/', '/home-member');
   return paths;
 }

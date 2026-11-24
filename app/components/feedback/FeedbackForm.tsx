@@ -7,9 +7,9 @@ import { send } from '../community/api';
 const KIND_KEYS = Object.keys(FEEDBACK_KINDS) as FeedbackKind[];
 
 // 의견함 — 유형 + 본문(1000자) + 선택 연락처. 서버 API(/api/feedback)로만 보낸다
-export default function FeedbackForm({ from, initialKind }: { from?: string; initialKind?: string }) {
+export default function FeedbackForm({ from, initialKind, initialBody }: { from?: string; initialKind?: string; initialBody?: string }) {
   const [kind, setKind] = useState<FeedbackKind | null>(isFeedbackKind(initialKind) ? initialKind : null);
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState((initialBody ?? '').slice(0, FEEDBACK_LIMITS.body[1])); // /friendslop 등에서 ?text=로 미리 채움
   const [contact, setContact] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

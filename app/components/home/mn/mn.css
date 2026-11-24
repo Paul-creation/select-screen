@@ -246,3 +246,7 @@ body:has(.mn-top) .site-header.mn { margin-bottom: 0; border-bottom: 1px solid v
   .mn-page .mn-wrap > .mn-sec-posts { margin-bottom: 0; }
   .mn-page { padding-bottom: 104px; }
 }
+
+/* 우당탕 협동 칩(FriendslopChip) — 칩 위에 뜨는 말풍선. 칸을 차지하지 않는 absolute라 칩 줄이 다시 정렬되지 않는다 */
+.mn-fs-wrap { position: relative; display: inline-flex; }
+.mn-fs-tip { position: absolute; left: 50%; bottom: calc(100% + 8px); z-index: 30; width: max-content; max-width: 240px; padding: 8px 12px; font-size: 13px; font-weight: 500; line-height: 1.5; text-align: left; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-card); box-shadow: var(--shadow); transform: translateX(-50%); pointer-events: none; word-break: keep-all; }

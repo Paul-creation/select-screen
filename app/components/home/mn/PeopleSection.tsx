@@ -24,17 +24,20 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
   const { n, myPcOn, setMyPcOn, chips } = usePeople();
   const { pc, ready } = useMyPc();
   const myPcActive = ready && !!pc && myPcOn;
-  const chipOn = chips.free || chips.demo || chips.sale;
+  const chipOn = chips.free || chips.demo || chips.sale || chips.fs;
   const { games, filteredOut } = useMemo(() => {
     if (!recs) return { games: [], filteredOut: false };
     const user = myPcActive && pc ? toUserPc(pc) : null;
-    const pool = recs.ids[n].map((id) => recs.games[id]).filter((g) =>
+    // 우당탕 협동 칩: 후보 8개가 아니라 서버가 전체에서 고른 이 인원 탭의 인기순 6개(recs.fs). 다른 칩은 그 위에 그대로 건다
+    const pool = (chips.fs ? recs.fs[n] : recs.ids[n]).map((id) => recs.games[id]).filter((g) =>
       (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0));
     return choosePeopleGames(pool, user ? (g) => runsOnMyPc(user, g) : null, SHOW);
   }, [recs, n, myPcActive, pc, chips]);
   // 지금 켜진 칩을 검색 주소에 그대로 실어 "전체 보기"가 같은 조건으로 열리게
-  const chipQuery = `${chips.free ? '&price=0-0' : ''}${chips.sale ? '&sale=1' : ''}${chips.demo ? '&demo=1' : ''}`;
-  const allHref = `${peopleHref(n, myPcActive)}${chipQuery}`;
+  const chipQuery = `${chips.free ? '&price=0-0' : ''}${chips.sale ? '&sale=1' : ''}${chips.demo ? '&demo=1' : ''}${chips.fs ? '&fs=1' : ''}`;
+  // 우당탕 협동 칩이 켜져 있으면 전체 보기는 모음 페이지(/friendslop) — 지금 인원 탭과 무료·할인 칩을 넘긴다 (5는 "5인 이상")
+  const fsHref = `/friendslop?players=${n}${chips.free ? '&free=1' : ''}${chips.sale ? '&sale=1' : ''}`;
+  const allHref = chips.fs ? fsHref : `${peopleHref(n, myPcActive)}${chipQuery}`;
   // 추천 데이터가 없어도 머리(제목 + 인원 탭)는 그린다 — 탭이 그 인원의 검색 결과로 가는 길이라서
   return (
     <section className="mn-sec mn-sec-people" aria-labelledby="mn-people-title">
@@ -65,7 +68,7 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
         </p>
       )}
       {recs && <div className="mn-links">
-        <a href={allHref} className="sec-more">{peopleLabel(n)} 게임 전체 보기 →</a>
+        <a href={allHref} className="sec-more">{chips.fs ? `우당탕 협동 ${recs.fsTotal}개 전체 보기 →` : `${peopleLabel(n)} 게임 전체 보기 →`}</a>
         <LibraryLink />
       </div>}
     </section>

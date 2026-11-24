@@ -4,40 +4,34 @@
 // 지금 뜨는 게임에 보이는 게임(excludeIds, 모든 탭 10위까지)은 뺀다
 // 브라우저는 이 8개 중 앞 3개(재부상 2 + 신작 1)를 보여주고, 내 PC 사양으로 거르는 건 브라우저(PeopleRecs)에서 통과한 게임만 앞에서부터 3개 (lib/peopleShow.ts)
 // 게임 카드 칸은 상세 "비슷한 게임"과 같은 getCardGames
-import { friendsMax } from './playersMatch';
 import { PEOPLE_SHOW, PEOPLE_CANDIDATES } from './peopleShow';
 import type { SpecLike } from './specJudge';
 import { getCardGames } from './gameIndex';
 import { getCardExtras } from './cardExtras';
 import type { CardExtras } from './cardInfo';
 import { selectGames, selectHomeGames } from './visibleGames';
+import { topFriendslop } from './friendslop';
+import { getFriendslopGames } from './friendslopList';
+import { fitsPeople, type PeopleN } from './peopleFit';
 import { supabase } from './supabase';
 import { readAllPages } from './paged';
 import { MIN_PLAYERS, STREAMER_DAYS, classify, pickSlots, playerGrowth, streamerSum, type Sample, type TrendBadge } from './trending';
 
 export const PEOPLE_CHOICES = [2, 3, 4, 5] as const; // 5는 "5인 이상"
-export type PeopleN = (typeof PEOPLE_CHOICES)[number];
+export type { PeopleN };
+export { fitsPeople };
 export { PEOPLE_SHOW, PEOPLE_CANDIDATES };
 export { pickDaily } from './trending';
-// 인원별 친구끼리 최대 인원 상한 — 대규모 멀티가 소규모 추천에 섞이지 않게
-const MAX_CAP: Record<PeopleN, number> = { 2: 4, 3: 6, 4: 8, 5: 16 };
 const DAY = 86400_000;
 const PLAYER_PAGE_SIZE = 2000; // player_history 11일치(약 1만 1천 행)를 2,000행씩 — 서버 Max rows가 2,000 이상이어야 실제로 2,000씩 온다 (모자라면 readAllPages가 받은 만큼만 이어 읽음)
 const HISTORY_DAYS = 11; // 동접 증가율이 보는 가장 먼 기록 (7일 전 같은 3일 = 7~10일 전, 대체 구간 4~11일 전)
 
 // 게임 카드 칸은 목록(gameIndex)과 같은 느슨한 모양
 export type CardGame = { id: string; spec_min?: SpecLike | null; [key: string]: unknown };
-export type PeopleRecs = { games: Record<string, CardGame>; ids: Record<PeopleN, string[]>; badges: Record<string, TrendBadge[]> };
+// fs: 우당탕 협동 칩용 — 인원 탭별로 전체에서 고른 인기순 6개(lib/friendslop topFriendslop). 후보(ids)와 별개
+export type PeopleRecs = { games: Record<string, CardGame>; ids: Record<PeopleN, string[]>; fs: Record<PeopleN, string[]>; fsTotal: number; badges: Record<string, TrendBadge[]> };
 
 type Row = { id: string; min_players: number | null; max_players: number | null; party_max: number | null; current_players: number | null; release_date: string | null; review_total: number | null; recent_review_count: number | null };
-
-export const fitsPeople = (g: Pick<Row, 'min_players' | 'max_players' | 'party_max'>, n: PeopleN) => {
-  if (g.max_players === 1) return false; // 1인 전용
-  const max = friendsMax(g);
-  if (!max) return false;
-  if (max > MAX_CAP[n]) return false;
-  return n >= 5 ? max >= 5 : (g.min_players || 1) <= n && max >= n;
-};
 
 // 한국 시간 기준 오늘 날짜(YYYY-MM-DD) — 로테이션 시드
 const kstDate = (now = new Date()) => new Date(now.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
@@ -71,6 +65,12 @@ async function readStreamerAges(now: number): Promise<Map<string, number[]>> {
   return out;
 }
 
+// 우당탕 협동 게임 전체(lib/friendslopList) → 인원 탭별 인기순 6개 id + 전체 개수. 못 읽으면 빈 목록(칩만 비어 보임)
+async function getFriendslopPicks(): Promise<{ picks: Record<PeopleN, string[]>; total: number }> {
+  const all = await getFriendslopGames();
+  return { picks: Object.fromEntries(PEOPLE_CHOICES.map((n) => [n, topFriendslop(all, (g) => fitsPeople(g, n)).map((g) => g.id)])) as Record<PeopleN, string[]>, total: all.length };
+}
+
 export async function getPeopleRecs(excludeIds: string[]): Promise<PeopleRecs | null> {
   const { data, error } = await selectHomeGames('id, min_players, max_players, party_max, current_players, release_date, review_total, recent_review_count')
     .gte('current_players', MIN_PLAYERS)
@@ -80,7 +80,7 @@ export async function getPeopleRecs(excludeIds: string[]): Promise<PeopleRecs | 
   const nowDate = new Date();
   const now = nowDate.getTime();
   const today = kstDate(nowDate);
-  const [samples, streamerAges] = await Promise.all([readPlayerSamples(now).catch(() => null), readStreamerAges(now).catch(() => new Map<string, number[]>())]);
+  const [samples, streamerAges, fsResult] = await Promise.all([readPlayerSamples(now).catch(() => null), readStreamerAges(now).catch(() => new Map<string, number[]>()), getFriendslopPicks().catch(() => null)]);
   const skip = new Set(excludeIds);
 
   const trend = new Map<string, { kind: 'rising' | 'new'; score: number; badges: TrendBadge[] }>();
@@ -100,15 +100,18 @@ export async function getPeopleRecs(excludeIds: string[]): Promise<PeopleRecs | 
     .sort((a, b) => trend.get(b.id)!.score - trend.get(a.id)!.score || a.id.localeCompare(b.id))
     .map((g) => g.id);
   const picked = Object.fromEntries(PEOPLE_CHOICES.map((n) => [n, pickSlots(byScore('rising', n), byScore('new', n), `${today}:${n}`)])) as Record<PeopleN, string[]>;
-  const unique = [...new Set(Object.values(picked).flat())];
+  const fsPicks = fsResult?.picks ?? null;
+  const fsIds = fsPicks ?? (Object.fromEntries(PEOPLE_CHOICES.map((n) => [n, [] as string[]])) as Record<PeopleN, string[]>);
+  const unique = [...new Set([...Object.values(picked).flat(), ...Object.values(fsIds).flat()])];
   try {
     // 평가·태그·한국어 지원은 카드 칸에 없어 따로 읽어 덧붙인다 (못 읽으면 그 줄만 빠짐)
     const [cards, extras] = await Promise.all([getCardGames(unique), getCardExtras(unique).catch(() => ({} as Record<string, CardExtras>))]);
     // 칩은 안 쓰는 카드라 태그 번호는 보내지 않는다
     const games = Object.fromEntries((cards as CardGame[]).map(({ tag_ids, ...g }) => { void tag_ids; return [g.id, { ...g, ...extras[g.id] } as CardGame]; }));
     const ids = Object.fromEntries(PEOPLE_CHOICES.map((n) => [n, picked[n].filter((id) => games[id])])) as Record<PeopleN, string[]>;
+    const fs = Object.fromEntries(PEOPLE_CHOICES.map((n) => [n, fsIds[n].filter((id) => games[id])])) as Record<PeopleN, string[]>;
     const badges = Object.fromEntries(unique.filter((id) => games[id] && trend.get(id)?.badges.length).map((id) => [id, trend.get(id)!.badges]));
-    return { games, ids, badges };
+    return { games, ids, fs, fsTotal: fsResult?.total ?? 0, badges };
   } catch {
     return null;
   }

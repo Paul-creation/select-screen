@@ -12,6 +12,7 @@ import { EXCLUDE_TAG_IDS, type TagTree } from '../../lib/tagTree';
 import { ACTIVITY_BY_GROUP } from '../../lib/activitySearch';
 import { activityForTag } from '../../lib/activities';
 import { PLAYERS_MAX, PRICE_MAX, PRICE_ALL, FREE_ONLY, isAll, playersLabel, priceLabel } from '../../lib/rangeFilter';
+import FriendslopChip from '../FriendslopChip';
 
 // 배지(category) 값으로 거름 — '협동'·'대전'은 '협동·대전' 게임도 포함 (app/lib/badge.mjs)
 const CATEGORIES = ['협동', '대전', '혼자'];
@@ -54,6 +55,7 @@ export default function FilterPanel({ filters, variant = 'sheet' }: { filters: G
     duoOnly, setDuoOnly,
     largeOnly, setLargeOnly,
     demoOnly, setDemoOnly,
+    fsOnly, setFsOnly,
     priceRange, setPriceRange,
     saleOnly, setSaleOnly,
     myPcOnly, setMyPcOnly, myPc, myPcReady,
@@ -162,6 +164,7 @@ export default function FilterPanel({ filters, variant = 'sheet' }: { filters: G
             {/* 데모 있음 — 출시 전 게임 중 스팀 무료 데모가 있는 게임 (games.demo_appid, app/lib/release). 기본 검색에는 출시 예정 게임도 함께 나옴 */}
             <button type="button" className={`chip${demoOnly ? ' on' : ''}`} aria-pressed={demoOnly} onClick={() => setDemoOnly(!demoOnly)}>데모 있음</button>
             <button type="button" className={`chip${saleOnly ? ' on' : ''}`} aria-pressed={saleOnly} onClick={() => setSaleOnly(v => !v)}>지금 할인 중</button>
+            <FriendslopChip className="chip" pressed={fsOnly} onToggle={() => setFsOnly(!fsOnly)} />
           </div>
         </section>
 

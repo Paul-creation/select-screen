@@ -7,7 +7,8 @@
 // 태그는 이름 대신 번호(tag_ids, game_tags 표 순서대로)만 보낸다 — 이름·나무는 브라우저가 app/lib/tag-search-dict.json에서 한 번 받음
 // game_tags 표가 아직 없거나 비어 있으면(마이그레이션 전) 예전 한국어 태그(tags)를 그대로 보낸다
 import { supabase } from './supabase';
-import { flattenGame } from './price';
+import { flattenGame, getPriceInfo } from './price';
+import { isFriendslop } from './friendslop';
 import { selectGames } from './visibleGames';
 import { readAllPages } from './paged';
 import { isNoKorean } from './cardInfo';
@@ -48,6 +49,11 @@ const activitiesOf = (confirmed?: string[] | null, unsure?: string[] | null) => 
   ...(unsure?.length ? { activities_unsure: unsure } : {}),
 });
 
+// 우당탕 협동(lib/friendslop) — 판정이 true인 게임만 fs: true 칸을 보낸다(아니면 칸 자체가 없음). 수동 지정(friendslop 칸)은 따로 읽은 값
+const fsMap = (rows?: { id: string; friendslop: boolean | null }[] | null) => new Map((rows || []).map((r) => [r.id, r.friendslop]));
+const fsOf = (g: Record<string, any>, tags: string[] | null | undefined, activities: string[] | null | undefined, manual: Map<string, boolean | null>) => // eslint-disable-line @typescript-eslint/no-explicit-any
+  isFriendslop({ ...g, friendslop: manual.get(g.id) ?? null, price: getPriceInfo(g)?.final ?? null, tags, activities_confirmed: activities }) ? { fs: true } : {};
+
 export async function getGameIndex() {
   // GOTY 배지(goty_awards)는 기록 있는 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 배지 없이
   // 크로스플레이(has_crossplay)도 지원하는 게임 id만 따로 — 마이그레이션 전이라 칸이 없으면 오류를 무시하고 빈 목록
@@ -55,7 +61,7 @@ export async function getGameIndex() {
   // 지금 뜨는 게임 판정(trend_badge·trend_score)도 판정된 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 필터에 걸리는 게임이 없음
   // 출시 예정(release_status·demo_appid·release_date_text)도 출시 예정인 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 모두 출시된 게임으로
   // 스트리머 이름(game_id → 이름들)도 따로 — 못 읽으면 칩만 빠짐
-  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, streamers] = await Promise.all([
+  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, { data: fsRows }, streamers] = await Promise.all([
     readAllPages((from, to) => selectGames(INDEX_FIELDS)
       .gte('price_history.price', 100)
       .order('created_at', { ascending: false })
@@ -67,6 +73,7 @@ export async function getGameIndex() {
     readAllPages((from, to) => selectGames('id').eq('has_crossplay', true).order('id').range(from, to)),
     readAllPages((from, to) => selectGames('id, trend_badge, trend_score').not('trend_badge', 'is', null).order('id').range(from, to)),
     readAllPages((from, to) => selectGames(SOON_FIELDS).eq('release_status', 'coming_soon').order('id').range(from, to)),
+    readAllPages((from, to) => selectGames('id, friendslop').not('friendslop', 'is', null).order('id').range(from, to)), // 수동 지정 — 칸이 아직 없으면 오류를 무시하고 자동 기준만
     getAllStreamerNames().catch(() => new Map<string, string[]>()),
   ]);
   if (error || !list) throw new Error(`게임 목록 조회 실패: ${error?.message}`);
@@ -74,18 +81,20 @@ export async function getGameIndex() {
   const crossIds = new Set((cross || []).map((g) => g.id));
   const trendById = new Map((trend || []).map((g) => [g.id, { trend_badge: g.trend_badge, trend_score: g.trend_score }]));
   const soonById = soonMap(soon);
+  const fsById = fsMap(fsRows);
   const tagIds = await getGameTagIds();
   return (list || []).map((g) => {
     const { tags, spec_parsed, activities_confirmed, activities_unsure, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
     const ids = tagIds?.get(g.id);
-    return flattenGame({ ...rest, ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...gtOf(genres, themes), ...(streamers.has(g.id) ? { streamers: streamers.get(g.id) } : {}), ...(tagIds ? { tag_ids: ids || [] } : { tags }), spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...trendById.get(g.id), ...soonById.get(g.id) });
+    const fs = fsOf(g, tags, activities_confirmed, fsById);
+    return flattenGame({ ...rest, ...fs, ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...gtOf(genres, themes), ...(streamers.has(g.id) ? { streamers: streamers.get(g.id) } : {}), ...(tagIds ? { tag_ids: ids || [] } : { tags }), spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...trendById.get(g.id), ...soonById.get(g.id) });
   });
 }
 
 // 카드 몇 장에만 필요한 게임들 (상세 페이지 "비슷한 게임") — 전체 목록과 같은 칸·같은 모양으로, 넘긴 id 순서대로. 숨긴 게임은 빠진다
 export async function getCardGames(ids: string[]) {
   if (!ids.length) return [];
-  const [{ data: list, error }, { data: goty }, { data: cross }, { data: tagRows }, { data: soon }, { data: trend }, streamers] = await Promise.all([
+  const [{ data: list, error }, { data: goty }, { data: cross }, { data: tagRows }, { data: soon }, { data: trend }, { data: fsRows }, streamers] = await Promise.all([
     selectGames(INDEX_FIELDS)
       .in('id', ids)
       .gte('price_history.price', 100)
@@ -96,10 +105,12 @@ export async function getCardGames(ids: string[]) {
     supabase.from('game_tags').select('game_id, tag_id, rank').in('game_id', ids).order('rank'),
     selectGames(SOON_FIELDS).in('id', ids).eq('release_status', 'coming_soon'),
     selectGames('id, trend_badge, trend_score').in('id', ids).not('trend_badge', 'is', null), // 칸이 아직 없으면 오류를 무시하고 배지 없이
+    selectGames('id, friendslop').in('id', ids).not('friendslop', 'is', null), // 수동 지정 — 칸이 아직 없으면 오류를 무시하고 자동 기준만
     getStreamerNamesByGame(ids).catch(() => new Map<string, string[]>()),
   ]);
   const trendById = new Map((trend || []).map((g) => [g.id, { trend_badge: g.trend_badge, trend_score: g.trend_score }]));
   const soonById = soonMap(soon);
+  const fsById = fsMap(fsRows);
   if (error) throw new Error(`게임 카드 조회 실패: ${error.message}`);
   const gotyById = new Map((goty || []).map((g) => [g.id, g.goty_awards]));
   const crossIds = new Set((cross || []).map((g) => g.id));
@@ -108,7 +119,7 @@ export async function getCardGames(ids: string[]) {
   const byId = new Map((list || []).map((g) => {
     const { tags, spec_parsed, activities_confirmed, activities_unsure, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
     void tags; void genres; void themes; // 번호(tag_ids)만 보낸다
-    return [g.id, flattenGame({ ...rest, ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...trendById.get(g.id), ...(streamers.get(g.id)?.length ? { streamers: streamers.get(g.id)!.slice(0, STREAMER_NAMES_MAX) } : {}), tag_ids: tagIds.get(g.id) || [], spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...soonById.get(g.id) })] as const;
+    return [g.id, flattenGame({ ...rest, ...fsOf(g, tags, activities_confirmed, fsById), ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...trendById.get(g.id), ...(streamers.get(g.id)?.length ? { streamers: streamers.get(g.id)!.slice(0, STREAMER_NAMES_MAX) } : {}), tag_ids: tagIds.get(g.id) || [], spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...soonById.get(g.id) })] as const;
   }));
   return ids.map((id) => byId.get(id)).filter((g): g is NonNullable<typeof g> => !!g);
 }

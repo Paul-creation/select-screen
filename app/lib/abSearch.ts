@@ -36,7 +36,7 @@ export const HOW_RULES: Record<'party' | 'brain', Rule> = {
   brain: { genres: ['Puzzle'], tags: ['puzzle', 'wordgame', 'trivia', 'deduction'], acts: ['puzzle', 'deduction'] },
 };
 
-export type OptKey = 'free' | 'u10k' | 'sale' | 'easy' | 'ko' | 'local';
+export type OptKey = 'free' | 'u10k' | 'sale' | 'easy' | 'ko' | 'local' | 'fs';
 export const OPTS: { key: OptKey; label: string }[] = [
   { key: 'free', label: '무료' },
   { key: 'u10k', label: '만 원 이하' },
@@ -44,6 +44,7 @@ export const OPTS: { key: OptKey; label: string }[] = [
   { key: 'easy', label: '쉬운 게임' },
   { key: 'ko', label: '한국어' },
   { key: 'local', label: '한 화면에서' },
+  { key: 'fs', label: '우당탕 협동' }, // 주소는 o=가 아니라 fs=1 (lib/friendslop)
 ];
 export const U10K = 10000;
 
@@ -65,7 +66,7 @@ export function parseQuery(sp: { get(k: string): string | null }): AbQuery {
     genres: [...new Set(list('g').filter(isGenre))],
     gm: sp.get('gm') === 'any' ? 'any' : 'all', // 없거나 모르는 값이면 all
     kw: (sp.get('kw') || '').trim().slice(0, 40),
-    opts: [...new Set(list('o').filter(isOpt))],
+    opts: [...new Set([...list('o').filter(isOpt), ...(sp.get('fs') === '1' ? (['fs'] as OptKey[]) : [])])],
   };
 }
 
@@ -76,7 +77,9 @@ export function queryToParams(q: AbQuery): string {
   if (q.genres.length) p.set('g', q.genres.join(','));
   if (q.genres.length > 1 && q.gm === 'any') p.set('gm', 'any'); // all은 기본값이라 주소에 싣지 않는다
   if (q.kw) p.set('kw', q.kw);
-  if (q.opts.length) p.set('o', q.opts.join(','));
+  const normal = q.opts.filter((o) => o !== 'fs');
+  if (normal.length) p.set('o', normal.join(','));
+  if (q.opts.includes('fs')) p.set('fs', '1');
   return p.toString();
 }
 
@@ -156,6 +159,7 @@ export function matchesOpt(g: AbGame, o: OptKey) {
     case 'easy': return barrierOf(g) === '낮음';
     case 'ko': return g.no_korean !== true;
     case 'local': return !!g.has_local_coop;
+    case 'fs': return g.fs === true;
   }
 }
 
@@ -193,6 +197,7 @@ const DROP_ORDER: { label: string; apply: (p: Parts) => Parts }[] = [
   { label: '만 원 이하', apply: (p) => ({ ...p, opts: p.opts.filter((o) => o !== 'u10k') }) },
   { label: '무료', apply: (p) => ({ ...p, opts: p.opts.filter((o) => o !== 'free') }) },
   { label: '지금 할인 중', apply: (p) => ({ ...p, opts: p.opts.filter((o) => o !== 'sale') }) },
+  { label: '우당탕 협동', apply: (p) => ({ ...p, opts: p.opts.filter((o) => o !== 'fs') }) },
   { label: '직접 입력', apply: (p) => ({ ...p, kw: false }) },
   { label: '장르', apply: (p) => ({ ...p, genres: false }) },
   { label: '방식', apply: (p) => ({ ...p, how: false }) },
