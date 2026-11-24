@@ -99,7 +99,7 @@ export default function FriendslopList({ games }: { games: any[] }) {
       ) : (
         <>
           <ul className="mn-grid fs-grid">
-            {list.slice(0, shown).map((g, i) => <li key={g.id}><PosterCard brackets game={g} eager={i < 6} /></li>)}
+            {list.slice(0, shown).map((g, i) => <li key={g.id}><PosterCard game={g} eager={i < 6} /></li>)}
           </ul>
           {rest > 0 && (
             <div className="fs-more">
