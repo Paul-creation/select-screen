@@ -113,30 +113,6 @@
   /* 위에 붙는 조건 막대: sticky top 0, pad 4 16 12, 배경 --bg-top, 알약 52px */
   html body .ab-res .ab { position: sticky; top: 0; z-index: 41; margin: 0 -16px; padding: 4px 16px 12px; background: var(--bg-top); }
   html body .ab-results .ab-pill { width: 100%; }
-  html body .find-layout { display: block; margin-top: 12px; }
-  html body .find-filter { position: static; }
-  html body .find-filter .sec-label { display: none; }
-  html body .find-filter .ab-opts { flex-wrap: nowrap; gap: 8px; margin: 0 -16px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
-  html body .find-filter .ab-opts::-webkit-scrollbar { display: none; }
-  html body .find-filter .mn-chip { flex: 0 0 auto; min-height: 36px; padding: 0 14px; font-size: 13px; line-height: 1; border-radius: 999px; color: var(--ink-nav); background: var(--surface); border: 1px solid var(--line); white-space: nowrap; }
-  html body .find-filter .mn-chip[aria-pressed="true"] { color: var(--bg-top); background: var(--ink); border-color: var(--ink); }
-  html body .find-main .sec-head { align-items: baseline; margin: 18px 0 12px; padding-bottom: 0; border-bottom: 0; }
-  html body .find-main .sec-head-text .sec-label { display: none; }
-  html body .find-main .sec-title { font-size: 18px; font-weight: 900; letter-spacing: 0; }
-  html body .fr-list { gap: 10px; }
-  html body .fr-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 0 12px; align-items: start; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-  html body .fr-poster-link { grid-row: 1 / span 2; }
-  html body .fr-poster { width: 72px; }
-  html body .fr-body { gap: 5px; padding-top: 0; }
-  html body .fr-best { font-size: 11px; font-weight: 700; letter-spacing: 0; }
-  html body .fr-name { font-size: 15px; font-weight: 900; line-height: 1.3; }
-  html body .fr-meta { font-size: 12px; }
-  html body .fr-row .ab-badges { gap: 6px; }
-  html body .fr-row .ab-badges li { gap: 3px; padding: 3px 7px; font-size: 11px; }
-  html body .fr-price { grid-column: 2; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 7px; padding: 0; }
-  html body .fr-price-label { display: none; }
-  html body .fr-price-now { font-size: 18px; letter-spacing: 0; }
-  html body .fr-price-sale { gap: 6px; font-size: 12px; }
 
   /* ---------- 게임 상세 (MobGame) — main의 gd-* 구조 위에 모바일 값만 덮어쓴다 ---------- */
   /* 히어로: 위 70px, 캡슐 104px + 오른쪽(출시일·협동 / 제목 24px), 아래로 한 줄 소개 14px, 칩 가로 스크롤 */

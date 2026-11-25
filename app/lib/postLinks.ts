@@ -57,6 +57,6 @@ export function postHints(text: string): PostHints {
   };
 }
 
-export const playersLink = (n: number) => `/games?players=${n}`;
+export const playersLink = (n: number) => `/find?n=${n}`;
 export const SALE_LINK = '/games?sale=1';
 export const compareLink = (ids: string[]) => `/compare/new?games=${ids.filter((id) => UUID.test(id)).slice(0, MAX_COMPARE).join(',')}`;

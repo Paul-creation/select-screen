@@ -34,7 +34,7 @@ export default function MyPcResults({ user }: { user: UserPc }) {
   return (
     <div className="pc-results">
       <section className="mn-sec" aria-labelledby="pcr-ok">
-        <SectionHead id="pcr-ok" title="내 PC로 돌아가요" more={{ href: '/?mypc=1', text: '전체 보기', hard: true }} />
+        <SectionHead id="pcr-ok" title="내 PC로 돌아가요" more={{ href: '/find?mypc=1', text: '전체 보기', hard: true }} />
         {ok.length > 0 ? grid(ok) : <p className="mn-note">최소 사양을 충족하는 게임이 아직 없어요</p>}
       </section>
       <section className="mn-sec" aria-labelledby="pcr-fail">

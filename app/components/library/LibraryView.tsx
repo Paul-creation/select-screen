@@ -24,7 +24,7 @@ type Tab = 'friends' | 'taste';
 // 상태: 확인 중(정지된 틀) / 로그인 안 함 / 비공개·미확인(공개 방법 안내, 예전 목록이 있으면 두 탭 다 그 목록으로) / 보유 0개 / 정상
 export default function LibraryView() {
   return (
-    <PeopleProvider filters={null}>
+    <PeopleProvider>
       <Library />
     </PeopleProvider>
   );
