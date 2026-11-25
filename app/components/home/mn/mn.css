@@ -201,7 +201,7 @@ button.sec-more { padding: 0; font-family: inherit; background: none; border: 0;
 /* ---------- 메인 v2 ---------- */
 /* 방문자 히어로 — 높이 최소 704px(헤더 포함, 헤더는 이미지 위에 absolute), 내용은 위에서 300px 아래부터: 제목(60px) → 한 줄 설명(17px) → 검색창, 요소 간격 32px, 아래 72px
    이미지는 Steam library_hero 1장(object-fit: cover, 가운데). 마스크 = 좌우(양 끝 22%를 --bg-top으로) + 위아래(위 16%까지 헤더용 어둡게, 28%부터 56%에서 .72, 86%에서 --bg-top) — 아래 "N인 추천"과 경계 없이 이어진다 */
-.mn-hero { --mn-hero-bg-h: 640px; position: relative; box-sizing: border-box; min-height: 704px; padding: 300px 0 72px; text-align: center; }
+.mn-hero { --mn-hero-bg-h: 704px; position: relative; box-sizing: border-box; min-height: 704px; padding: 300px 0 72px; text-align: center; }
 .mn-hero .mn-hero-media { display: block; position: absolute; top: 0; left: 0; right: 0; height: var(--mn-hero-bg-h); z-index: -1; overflow: hidden; background: var(--bg-top); }
 .mn-hero .mn-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(0.7) saturate(0.85); }
 /* 배경 층(이미지·scrim·좌우/위아래 마스크)은 전부 top 0 + 높이 --mn-hero-bg-h로 고정 — 히어로가 패널 때문에 길어져도 이미지는 크기·위치 그대로, 아래는 마스크가 --bg-top으로 녹아 이어진다 */
