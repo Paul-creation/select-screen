@@ -14,9 +14,10 @@
     "insta": "node scripts/insta/generate.mjs",
     "og": "node scripts/insta/generate.mjs og",
     "verify-detail": "node --env-file=.env.local scripts/verify-detail-items.mjs",
-    "test": "node --test app/lib/*.test.mjs app/lib/user/*.test.mjs scripts/lib/*.test.mjs"
+    "test": "node --test app/lib/*.test.mjs app/lib/aiPick/*.test.mjs app/lib/user/*.test.mjs scripts/lib/*.test.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.14.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@supabase/supabase-js": "^2.116.0",
     "@vercel/analytics": "^2.0.1",

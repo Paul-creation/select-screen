@@ -11,19 +11,15 @@ const admin = createClient(
 export class AiLimitError extends Error {}
 
 // 1차 기준: 브라우저(익명 쿠키 ID)별 하루 횟수 — 공용 IP(사지방·학교·회사·모바일)에서 남의 사용분이 섞이지 않게
-// AI 추천은 한 번에 AI를 여러 번 부르므로(질문마다 1번, 최대 8번) 시작(recommend)만 횟수로 세고,
-// 이어지는 질문·결과(recommend-step)는 3번 × 7번까지 따로 막음
 const PER_CLIENT_DAILY: Record<string, number> = {
-  recommend: 3,
-  'recommend-step': 21,
   'compare-chat': 10,
   'compare-scores': 10,
   'curator-import': 40, // 관리자 캡션 붙여넣기 도구 (Haiku, 한 번에 약 $0.003)
 };
-// 2차 기준: 같은 IP 하루 상한 (쿠키를 지워 가며 남용하는 것만 막는 느슨한 값, recommend-step은 빼고 셈)
+// 2차 기준: 같은 IP 하루 상한 (쿠키를 지워 가며 남용하는 것만 막는 느슨한 값)
 const PER_IP_DAILY = 30;
-// 사이트 전체 하루 상한 (AI 호출 수)
-const GLOBAL_DAILY = 150;
+// 사이트 전체 하루 상한 (AI 호출 수) — guardedClaudeFetch와 reserveGlobalAiCall(알아서 골라줘)이 같은 ai_calls 표를 세어 함께 쓴다
+export const GLOBAL_DAILY = 300;
 
 export function getIp(h: Headers) {
   return (h.get('x-forwarded-for') || '').split(',')[0].trim() || h.get('x-real-ip') || 'unknown';
@@ -51,22 +47,18 @@ export async function guardedClaudeFetch(h: Headers, kind: string, init: Request
   const calls = () => admin.from('ai_calls').select('id', { count: 'exact', head: true }).gte('created_at', since);
 
   // null 칸은 eq에 걸리지 않으므로 IP·ID가 비워진 예전 행이 한 사람으로 묶이지 않음
-  const [mine, myStarts, ipUses, all] = await Promise.all([
+  const [mine, ipUses, all] = await Promise.all([
     count(calls().eq('client_id', clientKey).eq('kind', kind)),
-    kind === 'recommend-step' ? count(calls().eq('client_id', clientKey).eq('kind', 'recommend')) : Promise.resolve(1),
-    count(calls().eq('ip', ipKey).neq('kind', 'recommend-step')),
+    count(calls().eq('ip', ipKey).neq('kind', 'pick')), // 알아서 골라줘는 시간당 한도를 따로 써서 이 IP 하루 상한에서 뺀다
     count(calls()),
   ]);
-  // 시작 없이 이어지는 단계만 보내는 요청은 시작으로 셈
-  if (kind === 'recommend-step' && myStarts === 0) return guardedClaudeFetch(h, 'recommend', init);
-
   if (all >= GLOBAL_DAILY) {
     throw new AiLimitError('오늘은 사이트 전체 AI 사용량이 다 찼어요. 내일 다시 이용해 주세요.');
   }
   if (mine >= (PER_CLIENT_DAILY[kind] ?? 3)) {
-    throw new AiLimitError(`오늘 ${kind.startsWith('recommend') ? 'AI 추천' : '이 AI 기능'}의 내 사용 횟수를 다 썼어요. 내일 다시 이용해 주세요.`);
+    throw new AiLimitError('오늘 이 AI 기능의 내 사용 횟수를 다 썼어요. 내일 다시 이용해 주세요.');
   }
-  if (kind !== 'recommend-step' && ipUses >= PER_IP_DAILY) {
+  if (ipUses >= PER_IP_DAILY) {
     throw new AiLimitError('같은 네트워크에서 오늘 AI를 너무 많이 써서 잠시 막혔어요. 내일 다시 이용해 주세요.');
   }
 
@@ -76,4 +68,18 @@ export async function guardedClaudeFetch(h: Headers, kind: string, init: Request
   // 잔액 부족·월 한도 같은 Anthropic 오류는 사용자 한도와 다르므로 로그로 구분해 둠 (화면에는 한도 문구를 띄우지 않음)
   if (!res.ok) console.error(`Anthropic 오류 (${kind}) ${res.status}:`, await res.clone().text().catch(() => ''));
   return res;
+}
+
+// 알아서 골라줘(/api/pick)용 — SDK로 직접 부르므로 guardedClaudeFetch를 거치지 않고, 같은 ai_calls 표로 사이트 전체 하루 상한(GLOBAL_DAILY)만 맞춘다
+// (브라우저·IP 한도는 /api/pick이 시간당 횟수로 따로 막는다). 캐시에서 나간 응답은 둘 다 부르지 않으므로 세지 않는다
+// checkGlobalAiCap: true면 호출해도 됨, false면 상한 초과 → AI를 부르지 않고 대체 결과(fallback)로. 조회 실패 시에는 막지 않는다 (guardedClaudeFetch와 같은 기준)
+export async function checkGlobalAiCap(): Promise<boolean> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const all = await count(admin.from('ai_calls').select('id', { count: 'exact', head: true }).gte('created_at', since));
+  return all < GLOBAL_DAILY;
+}
+// AI를 실제로 부를 때 1건 기록 (IP는 해시만, 90일 뒤 purge-ip-hash가 비움)
+export async function recordAiCall(h: Headers, kind: string): Promise<void> {
+  const { error } = await admin.from('ai_calls').insert({ ip: ipHash(getIp(h)), client_id: null, kind });
+  if (error) console.error('AI 사용 기록 실패:', error.message);
 }

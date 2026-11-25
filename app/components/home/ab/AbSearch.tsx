@@ -24,7 +24,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
   games: any[] | null;
   initial?: AbQuery;
   variant?: 'home' | 'results';
-  trailing?: ReactNode; // 검색창 오른쪽에 붙일 것 (홈: AI 추천 버튼)
+  trailing?: ReactNode | ((q: AbQuery) => ReactNode); // 찾기 버튼 오른쪽에 붙일 것 (홈: 알아서 골라줘 버튼) — 데스크톱은 막대 안, 휴대폰은 알약 아래 한 줄. 함수면 지금 입력한 조건을 받는다
   onSubmit?: (q: AbQuery) => void;
   countFn?: (q: AbQuery) => number | null; // 결과 화면: 펼친 필터까지 합친 결과 수 (없으면 요약 바 조건만 센다)
 }) {
@@ -94,6 +94,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
     { key: 'what', label: '뭐 할까', value: sum.what, empty: '장르·게임 검색', panel: what },
   ];
 
+  const trailingNode = typeof trailing === 'function' ? trailing(q) : trailing;
   const pillMain = !hasBarConditions(q) ? '누구랑 할 거야?' : [sum.who, sum.how, sum.what].filter(Boolean).join(' · ');
 
   return (
@@ -120,6 +121,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
             </div>
           ))}
           <button type="button" className="ab-go" data-tour={variant === 'home' ? 'ab-go' : undefined} onClick={() => submit()}>{variant === 'results' ? '다시 찾기' : '찾기'}</button>
+          {trailingNode}
         </div>
 
         {/* ----- 휴대폰 ----- */}
@@ -130,7 +132,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
           </span>
           {variant === 'results' ? <span className="ab-pill-edit">바꾸기</span> : <span className="ab-pill-go" aria-hidden="true">→</span>}
         </button>
-        {trailing && <div className="ab-trailing">{trailing}</div>}
+        {trailingNode && <div className="ab-trailing ab-mobile">{trailingNode}</div>}
       </div>
 
       {sheet && mounted && createPortal(
