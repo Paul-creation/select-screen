@@ -1,7 +1,7 @@
 // 담당: Paul(메인 배너·디자인)
 'use client';
 
-import AbSearch from '../ab/AbSearch';
+import AiPickBar from '../ai/AiPickBar';
 import MemberHeadline from './MemberHeadline';
 import GameLink from '../../GameLink';
 import type { HeroFeatured } from '../../../lib/homeMain';
@@ -33,11 +33,11 @@ export default function MainHero({ games, hero = null, heroLines = [], member = 
           </div>
         )}
         {member && <div className="home-only mn-intro"><MemberHeadline lines={heroLines} /></div>}
-        {/* 3칸 검색창 — 찾기를 누르면 /find로 간다. AI 추천 버튼(AIRecommend)은 지웠다 — 나중에 "알아서 골라줘" 흐름으로 새로 만든다 (select-screen-mockups AiPick) */}
+        {/* 3칸 검색창 — 찾기를 누르면 /find로 간다. 검색창 끝의 [✦ 알아서 골라줘]는 질문(조건이 비었을 때) → 로딩 → 결과 3개를 검색창 바로 아래에 펼친다 (components/home/ai/AiPickBar, select-screen-mockups AiPick) */}
         <div className="ab-hero" data-tour="cmdbar">
           {member
-            ? <div data-tour="welcome-member"><AbSearch games={games} /></div>
-            : <AbSearch games={games} />}
+            ? <div data-tour="welcome-member"><AiPickBar games={games} /></div>
+            : <AiPickBar games={games} />}
         </div>
       </div>
     </div>

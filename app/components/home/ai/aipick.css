@@ -1,0 +1,91 @@
+/* 알아서 골라줘 — 질문 패널·로딩·결과 3장 (select-screen-mockups/AiPick.dc.html). 파란 버튼(--brand)은 이 기능에만 쓴다 */
+.ap-btn { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; margin-left: 8px; padding: 0 22px; font-family: inherit; font-size: 16px; font-weight: 900; white-space: nowrap; color: var(--on-brand); background: var(--brand); border: 0; border-radius: 10px; cursor: pointer; }
+.ap-btn:hover { filter: brightness(1.1); }
+.ap-btn:disabled { cursor: progress; filter: none; }
+.ap-btn-sm { min-height: 0; margin: 0; padding: 12px 18px; font-size: 15px; }
+.ap-spark { font-size: 18px; line-height: 1; }
+.ab-trailing .ap-btn { width: 100%; margin: 0; }
+
+.ap-panel { position: relative; z-index: 1; margin-top: 16px; text-align: left; color: var(--ink); background: var(--bg-card, #141311); border: 1px solid var(--line, #2E2C28); border-radius: 16px; }
+.ap-panel * { text-shadow: none; }
+.ap-ask { max-width: 760px; margin-inline: auto; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+.ap-head { display: flex; align-items: center; gap: 10px; color: var(--brand-ink); font-size: 14px; font-weight: 900; }
+.ap-q { display: flex; flex-direction: column; gap: 12px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.ap-q legend { padding: 0; font-size: 22px; font-weight: 900; }
+.ap-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ap-opt { min-height: 44px; padding: 10px 16px; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--ink-soft, #C9C4B8); background: var(--surface); border: 1px solid var(--line, #2E2C28); border-radius: 8px; cursor: pointer; }
+.ap-opt[aria-pressed="true"] { color: var(--on-brand); background: var(--ink); border-color: var(--ink); }
+.ap-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 20px; border-top: 1px solid var(--line, #2E2C28); }
+.ap-hint { font-size: 13px; color: var(--ink-muted); }
+.ap-foot .ap-btn { margin: 0; padding: 14px 22px; }
+.ap-close { flex: 0 0 auto; width: 36px; height: 36px; font-family: inherit; font-size: 16px; color: var(--ink-soft, #C9C4B8); background: transparent; border: 1px solid var(--line-strong); border-radius: 8px; cursor: pointer; }
+
+.ap-loading { display: flex; align-items: center; gap: 16px; padding: 28px 32px; }
+.ap-loading .ap-head { flex: 0 0 auto; }
+.ap-loading-text { font-size: 17px; font-weight: 700; }
+.ap-loading-count { margin-left: auto; font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+
+.ap-result { padding: 32px; display: flex; flex-direction: column; gap: 22px; }
+.ap-result-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.ap-result-top > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ap-title { margin: 0; font-size: 30px; font-weight: 900; letter-spacing: -0.03em; }
+.ap-conds { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ap-cond { padding: 6px 12px; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 999px; }
+.ap-note { margin: 0; font-size: 14px; color: var(--ink-soft, #C9C4B8); }
+
+.ap-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.ap-card { position: relative; display: flex; flex-direction: column; gap: 14px; height: 100%; box-sizing: border-box; padding: 16px; color: var(--ink); text-decoration: none; background: var(--surface); border: 1px solid var(--line, #2E2C28); border-radius: 12px; }
+.ap-brk { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transform: scale(1.01); transition: opacity .15s ease, transform .15s ease; }
+.ap-card:hover > .ap-brk, .ap-card:focus-visible > .ap-brk { opacity: 1; transform: scale(1); }
+.ap-brk i { position: absolute; display: block; width: 16px; height: 16px; border: 0 solid var(--brand); }
+.ap-brk .tl { top: -7px; left: -7px; border-top-width: 3px; border-left-width: 3px; }
+.ap-brk .tr { top: -7px; right: -7px; border-top-width: 3px; border-right-width: 3px; }
+.ap-brk .bl { bottom: -7px; left: -7px; border-bottom-width: 3px; border-left-width: 3px; }
+.ap-brk .br { bottom: -7px; right: -7px; border-bottom-width: 3px; border-right-width: 3px; }
+.ap-img { position: relative; display: block; aspect-ratio: 460 / 215; overflow: hidden; background: var(--surface-open); border-radius: 8px; }
+.ap-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ap-num { position: absolute; top: 10px; left: 10px; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 14px; font-weight: 900; color: var(--ink); background: #141311; border-radius: 99px; }
+.ap-name { font-size: 20px; font-weight: 900; overflow-wrap: anywhere; }
+.ap-reason { font-size: 15px; line-height: 1.6; color: var(--ink-soft, #C9C4B8); }
+.ap-checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-check { padding: 5px 9px; font-size: 13px; font-weight: 700; color: var(--brand-ink); background: rgba(61, 123, 255, .14); border-radius: 4px; }
+.ap-check.is-warn { color: var(--ink); background: rgba(244, 241, 234, .08); }
+.ap-bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line, #2E2C28); }
+.ap-price { display: flex; flex-direction: column; gap: 4px; }
+.ap-sale { display: flex; align-items: center; gap: 6px; }
+.ap-off { padding: 2px 6px; font-size: 13px; font-weight: 900; color: #052E16; background: var(--up, #4ADE80); border-radius: 3px; }
+.ap-was { font-size: 13px; color: var(--ink-muted); text-decoration: line-through; }
+.ap-now { font-size: 22px; font-weight: 900; }
+.ap-go { font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+.ap-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--line, #2E2C28); }
+.ap-act-l { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ap-sec { padding: 12px 18px; font-family: inherit; font-size: 15px; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; cursor: pointer; }
+.ap-link { padding: 12px 6px; font-size: 15px; font-weight: 700; color: var(--ink); text-decoration: underline; }
+.ap-vote { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-muted); }
+.ap-vote button { padding: 7px 12px; font-family: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line, #2E2C28); border-radius: 8px; cursor: pointer; }
+.ap-vote button[aria-pressed="true"] { color: var(--on-brand); background: var(--ink); border-color: var(--ink); }
+.ap-error { padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ap-error p { margin: 0; font-size: 16px; font-weight: 700; }
+.ap-backdrop { display: none; }
+
+@media (max-width: 768px) {
+  .ap-result { padding: 20px 16px; }
+  .ap-title { font-size: 24px; }
+  .ap-cards { grid-template-columns: 1fr; }
+  .ap-loading { flex-wrap: wrap; padding: 20px 16px; }
+  .ap-loading-count { margin-left: 0; width: 100%; }
+  .ap-actions, .ap-act-l { flex-direction: column; align-items: stretch; }
+  .ap-act-l .ap-btn { width: 100%; }
+  .ap-sec, .ap-link { text-align: center; }
+  /* 질문은 아래에서 올라오는 시트 */
+  .ap-backdrop { display: block; position: fixed; inset: 0; z-index: 900; background: rgba(0, 0, 0, .6); }
+  .ap-panel.ap-asking { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; margin: 0; max-height: 88vh; overflow-y: auto; border-radius: 16px 16px 0 0; border-bottom: 0; animation: ap-up .22s ease-out; }
+  .ap-ask { padding: 20px 16px 24px; gap: 20px; }
+  .ap-q legend { font-size: 19px; }
+  .ap-opt { flex: 1 1 auto; }
+  .ap-foot { flex-direction: column-reverse; align-items: stretch; }
+  .ap-foot .ap-btn { width: 100%; }
+}
+@keyframes ap-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap-panel.ap-asking { animation: none; } .ap-brk { transform: none; } }

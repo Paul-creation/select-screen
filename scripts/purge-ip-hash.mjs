@@ -26,6 +26,7 @@ const NULLABLE = [
   ['player_count_votes', 'voter_hash'], // 추천 인원 투표 중복 방지용 익명 값 (익명 쿠키 ID 해시)
   ['ai_calls', 'ip'],
   ['ai_calls', 'client_id'], // AI 한도용 익명 쿠키 ID 해시
+  ['ai_pick_rate', 'ip_hash'], // 알아서 골라줘 시간당 횟수 제한용 IP 해시 (사전 조건: 20261125090000_ai_pick.sql)
 ];
 const EXPIRED = 'expired:';
 
