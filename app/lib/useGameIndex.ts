@@ -33,19 +33,20 @@ function load() {
   return inflight;
 }
 
-export function useGameIndex() {
+// enabled=false면 받지 않는다 (헤더 이름 검색처럼 입력할 때 처음 받는 곳)
+export function useGameIndex({ enabled = true }: { enabled?: boolean } = {}) {
   const [data, setData] = useState<Loaded | null>(fresh);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (data) return;
+    if (data || !enabled) return;
     let alive = true;
     load()
       .then((d) => { if (alive) setData(d); })
       .catch(() => { if (alive) setError(true); });
     return () => { alive = false; };
-  }, [data, attempt]);
+  }, [data, attempt, enabled]);
 
   const retry = useCallback(() => { setError(false); setAttempt((n) => n + 1); }, []);
   return { games: data?.games ?? null, tree: data?.tree ?? null, error, retry };

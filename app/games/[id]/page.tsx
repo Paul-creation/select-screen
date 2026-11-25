@@ -363,10 +363,10 @@ export default async function GameDetail({ params }: { params: Promise<{ id: str
   }
   if (!comingSoon && game.review_positive_percent) tiles.push({ key: 'review', label: 'Steam 평가', value: <span className="num">{game.review_positive_percent}%</span>, sub: [game.review_summary, game.review_total ? `리뷰 ${n(game.review_total)}개` : ''].filter(Boolean).join(' · ') });
   if (!comingSoon && showRecent) tiles.push({ key: 'recent', label: '최근 30일 평가', value: <span className="num">{recentPct}%</span>, sub: Math.abs(recentGap) >= 15 ? (recentGap < 0 ? '최근 평가가 낮아졌어요' : '최근 평가가 좋아졌어요') : `리뷰 ${n(game.recent_review_count)}개` });
-  if (!comingSoon && game.current_players > 0) tiles.push({ key: 'now', label: '지금 동접', value: <><span className="num">{n(game.current_players)}</span>명</> });
-  if (!comingSoon && game.peak_players > 0) tiles.push({ key: 'peak', label: '최고 동접', value: <><span className="num">{n(game.peak_players)}</span>명</>, sub: '역대 기준' });
   if (pt?.kind === 'hours') tiles.push({ key: 'time', label: pt.label, value: game.solo_mode === 'none' ? <span className="num">{hours(pt.normally)}</span> : <>보통 <span className="num">{hours(pt.normally)}</span></>, sub: [pt.hastily ? `빠르게 ${hours(pt.hastily)}` : '', pt.completely ? `전부 ${hours(pt.completely)}` : ''].filter(Boolean).join(' · ') || undefined });
   else if (pt) tiles.push({ key: 'time', label: pt.label, value: pt.text, valueClass: 'is-text' });
+  if (!comingSoon && game.current_players > 0) tiles.push({ key: 'now', label: '지금 동접', value: <><span className="num">{n(game.current_players)}</span>명</> });
+  if (!comingSoon && game.peak_players > 0) tiles.push({ key: 'peak', label: '최고 동접', value: <><span className="num">{n(game.peak_players)}</span>명</>, sub: '역대 기준' });
   if (friendsMax) tiles.push({ key: 'party', label: '인원', value: friendsMax === 1 ? '혼자' : <>최대 <span className="num">{friendsMax}</span>명</> });
   if (game.entry_barrier) tiles.push({ key: 'gate', label: '진입장벽', value: game.entry_barrier, valueClass: 'is-text' });
   // korean_support가 비어 있으면(아직 확인 전) 칸을 숨긴다 — "지원 안 함"은 스팀에서 한국어 없음을 확인한 게임만
@@ -401,7 +401,7 @@ export default async function GameDetail({ params }: { params: Promise<{ id: str
       ) : (
         <>
           <div className="gd-price-head">
-            <span className="gd-price-label">{buyLabel} 가격</span>
+            <span className="gd-price-label">{buyLabel} 가격 · 하루 한 번 갱신</span>
             <HeartButton gameId={game.id} variant="title" />
           </div>
           {price && price.discount > 0 && !game.is_free && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GameLink from './GameLink';
 import CuratorPoster from './CuratorPoster';
@@ -14,6 +14,7 @@ import { type GameFilter, type GameSort, type PostSection } from '../lib/curator
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 게임 카드 칸은 목록(gameIndex)과 같은 느슨한 모양
 type Game = any;
 export type Tab = 'single' | 'collection';
+const STEP = 8; // 단일 소개는 처음 8개, "이전 게시물 더 보기"를 누를 때마다 8개씩
 
 const FILTERS: { key: GameFilter; label: string }[] = [
   { key: 'sale', label: '지금 할인 중' },
@@ -99,6 +100,11 @@ export default function CuratorGames({ curator, games, sections, tab, filterPara
     // eslint-disable-next-line react-hooks/exhaustive-deps -- passes는 filters만 읽는다
   }, [sections, games, tab, filterKey, sort]);
 
+  // 탭·필터·정렬이 바뀌면 처음 8개부터
+  const resetKey = `${tab}|${filterKey}|${sort}`;
+  const [shownState, setShownState] = useState({ key: resetKey, n: STEP });
+  const shown = shownState.key === resetKey ? shownState.n : STEP;
+
   return (
     <>
       <div className="curator-controls">
@@ -125,8 +131,9 @@ export default function CuratorGames({ curator, games, sections, tab, filterPara
       {cards.length === 0 ? (
         <p className="tl-note">{filters.length ? '조건에 맞는 게시물이 없어요.' : tab === 'single' ? '단일 소개 게시물이 없어요.' : '모음집 게시물이 없어요.'}</p>
       ) : tab === 'single' ? (
+        <>
         <ul className="cg-single">
-          {cards.map(({ s, ids }, i) => {
+          {cards.slice(0, shown).map(({ s, ids }, i) => {
             const g = games[ids[0]];
             const rating = g.review_percent ? `${g.review_summary ? `${g.review_summary} ` : ''}${g.review_percent}%` : '';
             const info = [playersText(g), rating].filter(Boolean).join(' · ');
@@ -151,6 +158,8 @@ export default function CuratorGames({ curator, games, sections, tab, filterPara
             );
           })}
         </ul>
+        {cards.length > shown && <button type="button" className="cg-more" onClick={() => setShownState({ key: resetKey, n: shown + STEP })}>이전 게시물 더 보기 →</button>}
+        </>
       ) : (
         <div className="cg-colls">
           {cards.map(({ s, ids }) => (

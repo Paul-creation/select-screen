@@ -37,7 +37,7 @@ export default function RankLists({ lists }: { lists: HomeLists }) {
       titles={cols.map((c) => c.title)}
       panels={cols.map((c) => (
         <section key={c.key} className="mn-col" aria-labelledby={`mn-col-${c.key}`}>
-          <SectionHead id={`mn-col-${c.key}`} label={c.title} more={c.href ? { href: c.href, text: '더 보기', hard: true } : undefined} />
+          <SectionHead id={`mn-col-${c.key}`} label={c.title} more={c.href ? { href: c.href, text: '전체', hard: true } : undefined} />
           <ol className="mn-rank-list">
             {lists[c.key].map((row, i) => <Row key={row.id} row={row} rank={i + 1} />)}
           </ol>
