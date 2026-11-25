@@ -63,6 +63,7 @@
 
 - AI(Anthropic) 호출은 반드시 `app/lib/aiGuard.ts`의 `guardedClaudeFetch`로만 한다. `fetch`로 `api.anthropic.com`을 직접 부르지 않는다. (`scripts/` 폴더는 예외)
   - 예외 — `/api/pick`(알아서 골라줘)은 공식 SDK(`@anthropic-ai/sdk`)로 직접 부른다. guardedClaudeFetch는 브라우저당 하루 3회·쿠키 필수라 시간당 한도(로그인 전 10·후 30)와 맞지 않아서다. 대신 `aiGuard`의 `checkGlobalAiCap`·`recordAiCall`로 사이트 전체 하루 상한(300회, 다른 AI 기능과 합산)을 같이 쓰고, 넘으면 AI를 부르지 않고 fallback으로 내보낸다. 캐시에서 나간 응답은 세지 않는다. 새 AI 호출은 이 두 방식 중 하나만 쓴다.
+- 로컬에서 /api/pick 등 AI 라우트를 확인할 때는 ANTHROPIC_API_KEY를 비운 채로 서버를 띄우거나 mock을 써서 실제 호출이 나가지 않게 한다. 실제 호출이 꼭 필요하면 먼저 물어본다.
 - AI 모델은 기본으로 Haiku를 쓰고, 웹 검색 도구는 꼭 필요할 때만 쓴다. 비용이 드는 작업은 실행 전에 예상 비용을 먼저 알려준다.
 - `price_history` 같은 기록 테이블의 데이터를 지우는 코드는 만들지 않는다. 필요하면 먼저 물어본다.
   - 기록 테이블 삭제 금지의 예외 — 개인정보처리방침에 따른 post_reports·feedback 1년 경과분 삭제(`scripts/purge-old-records.mjs`), ip_hash 90일 경과분 비우기(`scripts/purge-ip-hash.mjs`). 그 외 삭제는 여전히 금지
