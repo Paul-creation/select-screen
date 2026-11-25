@@ -15,6 +15,7 @@ export default function OpinionBox({ gameId, initial }: { gameId: string; initia
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false); // 닉네임·비밀번호 칸은 텍스트 칸을 누르면 나온다
 
   useEffect(() => setNickname(loadNickname()), []);
 
@@ -35,12 +36,12 @@ export default function OpinionBox({ gameId, initial }: { gameId: string; initia
       <form className="gd-form" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <label className="gd-field">
           <span className="gd-field-label">이 게임 해본 사람 한마디</span>
-          <textarea rows={3} placeholder={`친구랑 해보니 어땠어요? (${MAX}자)`} value={body} maxLength={MAX} onChange={(e) => setBody(e.target.value)} />
+          <textarea rows={3} placeholder={`친구랑 해보니 어땠어요? (${MAX}자)`} value={body} maxLength={MAX} onFocus={() => setOpen(true)} onChange={(e) => setBody(e.target.value)} />
         </label>
-        <div className="gd-form-inputs">
+        {(open || !!body || !!error) && <div className="gd-form-inputs">
           <input placeholder="닉네임" value={nickname} maxLength={LIMITS.nickname[1]} onChange={(e) => setNickname(e.target.value)} aria-label="닉네임" />
           <input type="password" placeholder="비밀번호" value={password} maxLength={LIMITS.password[1]} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-label="비밀번호" />
-        </div>
+        </div>}
         <div className="gd-form-foot">
           <span className="gd-form-hint">닉네임과 비밀번호로 수정·삭제할 수 있어요 · <a href="/community/policy">운영정책</a></span>
           <button type="submit" className="gd-submit" disabled={busy || !body.trim()}>등록</button>

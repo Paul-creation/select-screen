@@ -1,0 +1,25 @@
+/* 헤더 게임 이름 검색 — MainOutV2 시안. 네비 아래 줄 오른쪽, 드롭다운은 페이지 최상단 레이어(z-index 100+). 휴대폰(767px 이하)은 숨김 */
+.site-header .hs-row { position: absolute; top: 100%; left: 0; right: 0; z-index: 101; max-width: 1200px; margin: 0 auto; padding: 12px 24px 0; display: flex; justify-content: flex-end; pointer-events: none; }
+.hs-wrap { position: relative; display: inline-flex; pointer-events: auto; }
+.hs-box { display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 280px; height: 40px; padding: 0 10px 0 12px; color: var(--ink-muted); background: rgba(20, 19, 17, .55); backdrop-filter: blur(8px); border: 1px solid rgba(244, 241, 234, .18); border-radius: 6px; cursor: text; }
+.hs-box:focus-within { border-color: var(--ink-muted); outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+.hs-box input:focus-visible { outline: none; }
+.hs-box input { flex: 1; min-width: 0; padding: 0; font: inherit; font-size: 14px; font-weight: 500; color: var(--ink); background: transparent; border: 0; outline: none; appearance: none; }
+.hs-box input::placeholder { color: var(--ink-muted); opacity: 1; }
+.hs-box input::-webkit-search-cancel-button { display: none; }
+.hs-box kbd { font-family: var(--font-num); font-size: 11px; font-weight: 700; line-height: 16px; padding: 1px 6px; color: var(--ink-muted); border: 1px solid var(--line-strong); border-radius: 4px; }
+.hs-drop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 101; width: 380px; max-width: calc(100vw - 32px); overflow: hidden; text-align: left; background: #1B1A17; border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: 0 18px 48px rgba(0, 0, 0, .55); }
+.hs-list { padding: 6px; }
+.site-header .hs-opt { display: flex; align-items: center; gap: 12px; padding: 8px; text-decoration: none; border-radius: 6px; }
+.hs-opt[aria-selected="true"] { background: #26241F; }
+.hs-thumb { position: relative; flex: 0 0 32px; width: 32px; height: 48px; overflow: hidden; background: var(--surface); border-radius: 3px; box-shadow: inset 0 0 0 1px var(--poster-line); }
+.hs-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hs-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.hs-name { overflow: hidden; font-size: 14px; font-weight: 700; color: var(--ink-nav); white-space: nowrap; text-overflow: ellipsis; }
+.hs-name b { font-weight: 900; color: var(--ink); }
+.hs-meta { font-size: 12px; color: var(--ink-muted); }
+.hs-sale { padding: 2px 6px; font-size: 11px; font-weight: 900; color: var(--mn-sale-fg, #052E16); background: var(--mn-sale-bg, #4ADE80); border-radius: 4px; }
+.hs-price { font-family: var(--font-num); font-size: 13px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.hs-none { margin: 0; padding: 18px 16px; font-size: 14px; color: var(--ink-muted); }
+.hs-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 12px; color: var(--ink-muted); border-top: 1px solid var(--line); }
+@media (max-width: 767px) { .site-header .hs-row { display: none; } }

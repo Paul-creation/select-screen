@@ -1,7 +1,7 @@
 /* 에어비앤비식 3칸 검색창·상황 타일·결과 — 색·반경은 brand-tokens.css 토큰. 선택·값이 들어간 칸은 --ink 배경 + 어두운 글씨 (괄호 없음). 767px 이하가 휴대폰 모양 */
 
 /* ---------- 검색창 (데스크톱) ---------- */
-.ab { position: relative; z-index: 40; /* 팝오버(z 40)가 결과 카드·포스터 괄호(z 3)·sticky 필터 위에 오게 — 이 칸이 하나의 쌓임 맥락 */ max-width: 880px; margin-inline: auto; text-align: left; }
+.ab { position: relative; z-index: 100; /* 팝오버(z 100, README)가 결과 카드·포스터 괄호(z 3)·sticky 필터 위에 오게 — 이 칸이 하나의 쌓임 맥락 */ max-width: 880px; margin-inline: auto; text-align: left; }
 .ab, .ab * { text-shadow: none; }
 .ab-row { display: flex; align-items: center; gap: 12px; }
 .ab-bar { position: relative; flex: 0 1 auto; min-width: 0; display: flex; align-items: center; padding: 8px; gap: 0; background: rgba(30, 29, 26, .88); border: 1px solid var(--line-strong); border-radius: var(--r-search); box-shadow: var(--shadow); }
@@ -30,16 +30,16 @@
 .mn .ab-trailing .ai-trigger-clean { height: 52px; padding: 0 18px; gap: 8px; border: 1px solid var(--line-strong); border-radius: var(--r-search); background: transparent; color: var(--brand-ink); font-family: inherit; font-size: 15px; font-weight: 800; transform: none; }
 .mn .ab-trailing .ai-trigger-clean:hover { background: rgba(122, 166, 255, .1); }
 
-/* 칸 아래 팝오버 — SearchPopovers 시안: 연 칸의 왼쪽 아래 12px, 오른쪽이 화면을 넘으면 오른쪽 맞춤(.is-flip), z-index 40 */
-.ab-panel { position: absolute; top: calc(100% + 12px); left: 0; z-index: 40; display: flex; flex-direction: column; gap: 14px; width: 360px; max-width: calc(100vw - 32px); max-height: min(70vh, 640px); overflow-y: auto; box-sizing: border-box; padding: 18px; text-align: left; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-search); box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
-.ab-panel-what { width: 440px; }
+/* 칸 아래 팝오버 — SearchPopovers 시안: 연 칸의 왼쪽 아래 12px, 오른쪽이 화면을 넘으면 오른쪽 맞춤(.is-flip), z-index 100 */
+.ab-panel { position: absolute; top: calc(100% + 12px); left: 0; z-index: 100; display: flex; flex-direction: column; gap: 14px; width: 400px; max-width: calc(100vw - 32px); max-height: min(70vh, 640px); overflow-y: auto; box-sizing: border-box; padding: 18px; text-align: left; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-search); box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+.ab-panel-what { width: 480px; }
 .ab-panel.is-flip { left: auto; right: 0; }
 .ab-who, .ab-how-panel, .ab-what { display: flex; flex-direction: column; gap: 14px; }
 
 /* 팝오버 푸터 — 지우기 / 완료 (뭐 할까는 "N개 보기") */
 .ab-pfoot { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); }
 .ab-pclear { padding: 0; font-family: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; color: var(--ink-muted); background: transparent; border: 0; cursor: pointer; }
-.ab-pdone { padding: 10px 18px; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--on-brand); background: var(--brand); border: 0; border-radius: 8px; cursor: pointer; }
+.ab-pdone { padding: 10px 18px; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--bg-top); background: var(--ink); border: 0; border-radius: 8px; cursor: pointer; }
 .ab-pdone:hover { filter: brightness(1.1); }
 
 /* 선택 표시는 크림 채움만 (괄호 없음) */
@@ -129,7 +129,7 @@
 }
 
 /* ---------- 홈: 히어로의 검색창 / 히어로 아래 "이런 판 어때요?" 타일 ---------- */
-.ab-hero { position: relative; z-index: 40; max-width: 880px; margin-inline: auto; }
+.ab-hero { position: relative; z-index: 100; max-width: 880px; margin-inline: auto; }
 .ab-sit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
 .ab-sit-card { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 84px; height: 100%; box-sizing: border-box; padding: 16px 18px; text-decoration: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-tile); }
 .ab-sit-card strong { font-size: 16px; font-weight: 700; color: var(--ink); }

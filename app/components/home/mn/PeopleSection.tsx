@@ -68,7 +68,8 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
         </p>
       )}
       {recs && <div className="mn-links">
-        <a href={allHref} className="sec-more">{chips.fs ? `우당탕 협동 ${recs.fsTotal}개 전체 보기 →` : `${peopleLabel(n)} 게임 전체 보기 →`}</a>
+        {/* 위쪽 "더 보기 →"와 겹쳐서 일반 모드에서는 뺀다 — 우당탕 협동 칩일 때만 /friendslop 모음으로 가는 링크 */}
+        {chips.fs && <a href={allHref} className="sec-more">우당탕 협동 {recs.fsTotal}개 전체 보기 →</a>}
         <LibraryLink />
       </div>}
     </section>
