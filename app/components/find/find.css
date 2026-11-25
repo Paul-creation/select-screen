@@ -6,7 +6,12 @@
 
 /* ---------- 왼쪽 "더 좁히기" (폭 260px, 칸 안에서만 스크롤) ---------- */
 /* 필터를 펼치거나 접어도 오른쪽 결과 칸(.fd-main)의 폭·배열은 그대로 — 왼쪽은 폭이 고정된 칸이고 길이만 달라진다 */
-.fd-aside { flex: 0 0 260px; width: 260px; min-width: 0; align-self: flex-start; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; }
+.fd-aside { flex: 0 0 260px; width: 260px; min-width: 0; align-self: flex-start; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding-right: 14px; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.fd-aside:hover { scrollbar-color: var(--ink-muted) transparent; } /* 스크롤바는 평소 #3A3833, 칸에 마우스를 올렸을 때만 진하게 */
+.fd-aside::-webkit-scrollbar { width: 6px; }
+.fd-aside::-webkit-scrollbar-track { background: transparent; }
+.fd-aside::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.fd-aside:hover::-webkit-scrollbar-thumb { background: var(--ink-muted); }
 .fd-aside-head { display: flex; justify-content: space-between; align-items: baseline; }
 .fd-aside-title { font-size: 13px; font-weight: 900; letter-spacing: 0.1em; color: var(--ink-nav); }
 .fd-clear { padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-muted); text-decoration: underline; background: none; border: 0; cursor: pointer; }
@@ -127,14 +132,17 @@
 /* 행 카드 */
 .fd-row { display: flex; gap: 20px; align-items: center; padding: 14px 20px 14px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 .fd-poster { position: relative; flex: 0 0 88px; width: 88px; height: 132px; background: var(--bg-top); border-radius: 4px; overflow: hidden; }
-.fd-poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fd-poster .fp-img, .fd-card-img .fp-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fd-card-img .fp-img { border-radius: 7px 7px 0 0; }
+.fp-bg, .fp-fg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.fp-bg { object-fit: cover; filter: blur(16px) brightness(.6); transform: scale(1.2); }
+.fp-fg { object-fit: contain; }
 .fd-row .fd-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .fd-row .fd-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
 /* 카드 보기 — 3열 가로 캡슐. 브래킷이 바깥으로 나가야 해서 overflow: hidden 없이 이미지 위쪽 모서리만 둥글게 */
 .fd-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 .fd-card-img { display: block; position: relative; aspect-ratio: 460 / 215; background: var(--bg-top); border-radius: 7px 7px 0 0; }
-.fd-card-img img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 7px 7px 0 0; }
 .fd-card .fd-body { display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 14px; }
 .fd-card-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; padding-top: 6px; }
 .fd-card-price { display: flex; flex-direction: column; gap: 2px; }

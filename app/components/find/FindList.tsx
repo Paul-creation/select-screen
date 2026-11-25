@@ -1,8 +1,7 @@
 'use client';
 
 import GameLink from '../GameLink';
-import GameImage from '../GameImage';
-import PosterImage from '../home/mn/PosterImage';
+import FindPoster from './FindPoster';
 import { badgesFor, type AbCtx, type AbQuery } from '../../lib/abSearch';
 import { getPriceInfo, PRICE_TYPE_LABEL } from '../../lib/price';
 import { playersText } from '../../lib/players';
@@ -71,7 +70,7 @@ export function FindRow({ g, i, q, ctx, picked, onCompare }: CardProps) {
     <li className="fd-hv fd-row">
       <Brackets />
       <span className="fd-poster" aria-hidden="true">
-        <PosterImage cover={{ vertical: g.cover_vertical_url ?? null, appid: g.steam_appid ?? null, wide: g.card_image_url || g.cover_image_url || null }} eager={i < 4} />
+        <FindPoster game={g} variant="vertical" eager={i < 4} />
       </span>
       <div className="fd-body">
         <GameLink href={`/games/${g.id}`} className="fd-name">{gameName(g)}</GameLink>
@@ -89,16 +88,13 @@ export function FindRow({ g, i, q, ctx, picked, onCompare }: CardProps) {
   );
 }
 
-const steamHeader = (appid: number | null | undefined) => (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null);
-
 export function FindCard({ g, i, q, ctx, picked, onCompare }: CardProps) {
   const meta = metaOf(g);
-  const src = g.card_image_url || g.cover_image_url || steamHeader(g.steam_appid);
   return (
     <li className="fd-hv fd-card">
       <Brackets />
       <span className="fd-card-img" aria-hidden="true">
-        {src && <GameImage src={src} alt="" loading={i < 6 ? 'eager' : 'lazy'} decoding="async" fallbackWidth={460} />}
+        <FindPoster game={g} variant="wide" eager={i < 6} />
       </span>
       <div className="fd-body">
         <GameLink href={`/games/${g.id}`} className="fd-name">{gameName(g)}</GameLink>
