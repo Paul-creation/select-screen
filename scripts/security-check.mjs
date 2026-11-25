@@ -29,14 +29,15 @@ async function checkPickCode() {
     ? ok('횟수 제한 확인이 AI 호출보다 앞') : bad('횟수 제한 확인이 AI 호출보다 뒤에 있음');
   /parsePickInput\(/.test(route) ? ok('요청 본문을 parsePickInput(정해진 선택지만 통과)으로 거름') : bad('요청 본문을 parsePickInput으로 거르지 않음');
   try {
-    const { parsePickInput, MAX_PICK_N } = await import(new URL('../app/lib/aiPick/moods.ts', import.meta.url).href);
-    const odd = parsePickInput({ n: 99999, how: '<script>', g: ['nope', 'horror', 7, null], mood: 'evil', excludeIds: ['not-uuid', 5, "'; drop table"] });
-    odd.n <= (MAX_PICK_N ?? 5) && odd.how === null && odd.mood === null && odd.excludeIds.length === 0 && odd.g.length === 1 && odd.g[0] === 'horror'
-      ? ok('선택지 밖 값(이상한 n·how·장르·분위기·id)은 버려짐') : bad(`선택지 밖 값이 그대로 통과: ${JSON.stringify(odd)}`);
-    const empty = parsePickInput('garbage');
-    empty.n === null && empty.how === null && empty.mood === null && empty.g.length === 0 && empty.excludeIds.length === 0
-      ? ok('객체가 아닌 본문은 빈 입력으로 처리됨') : bad('객체가 아닌 본문 처리 이상');
+    const { parsePickInput } = await import(new URL('../app/lib/aiPick/moods.ts', import.meta.url).href);
+    const odd = [{ n: 99999 }, { n: 6 }, { how: '<script>' }, { g: ['nope', 'horror'] }, { mood: 'evil' }, { excludeIds: ['not-uuid'] }, { excludeIds: 'x' }, { kw: 'x' }, 'garbage', null];
+    const passed = odd.filter((o) => parsePickInput(o) !== null);
+    passed.length === 0 ? ok('선택지 밖 값·모르는 키·잘못된 본문은 parsePickInput이 거절(400)') : bad(`선택지 밖 값이 통과: ${JSON.stringify(passed)}`);
+    parsePickInput({}) !== null ? ok('빈 입력({})은 정상 처리') : bad('빈 입력({})이 거절됨');
   } catch (e) { note('parsePickInput 실행 점검 건너뜀: ' + e.message); }
+  const iBad = route.indexOf("res({ error: 'bad_input' }, 400)");
+  const firstWork = Math.min(...["from('ai_pick_cache')", "from('ai_pick_rate')", 'checkGlobalAiCap()', 'client.messages.create'].map((t) => route.indexOf(t)).filter((x) => x > 0));
+  iBad > 0 && iBad < firstWork ? ok('입력 검증(400)이 캐시·횟수 제한·AI 호출보다 앞 — 400은 횟수·하루 상한에 세지 않음') : bad('입력 검증(400)이 캐시·횟수 제한·AI 호출보다 앞에 있지 않음');
   const responseLines = route.split('\n').filter((l) => /\bres\(|NextResponse\.json\(/.test(l));
   const leaky = responseLines.filter((l) => /SYSTEM_PROMPT|userPrompt|\blines\b|process\.env|apiKey/.test(l));
   leaky.length === 0 ? ok('응답을 만드는 코드에 키·프롬프트가 들어가지 않음') : bad(`응답에 키·프롬프트가 섞일 수 있음: ${leaky.map((l) => l.trim().slice(0, 80)).join(' | ')}`);
@@ -433,13 +434,14 @@ async function checkSite() {
     return note('사이트에 연결할 수 없어요: ' + e.message);
   }
 
-  // /api/pick — AI가 불리지 않는 요청만 보낸다 (GET은 405, 피드백의 잘못된 요청은 400). 응답 본문·헤더에 키·프롬프트가 없어야 한다
+  // /api/pick — AI가 불리지 않는 요청만 보낸다 (GET은 405, 선택지 밖 값은 AI 전에 400, 피드백의 잘못된 요청은 400). 응답 본문·헤더에 키·프롬프트가 없어야 한다
   {
     const secrets = [process.env.ANTHROPIC_API_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY].filter((v) => v && v.length >= 12);
     let promptHead = '';
     try { promptHead = String((await import(new URL('../app/lib/aiPick/prompt.ts', import.meta.url).href)).SYSTEM_PROMPT || '').split('\n')[0].trim(); } catch {}
     const probes = [
       ['GET /api/pick', () => fetch(SITE + '/api/pick')],
+      ['POST /api/pick (선택지 밖 값)', () => fetch(SITE + '/api/pick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 99, mood: 'evil', excludeIds: 'x', kw: 'x' }) })],
       ['POST /api/pick/feedback (잘못된 본문)', () => fetch(SITE + '/api/pick/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })],
     ];
     const out = [];
@@ -448,15 +450,17 @@ async function checkSite() {
         const rr = await send();
         const text = await rr.text();
         const head = [...rr.headers.entries()].map(([k, v]) => `${k}: ${v}`).join('\n');
-        out.push({ label, status: rr.status, all: text + '\n' + head });
+        out.push({ label, status: rr.status, text, all: text + '\n' + head });
       } catch (e) { out.push({ label, status: 0, all: '' }); note(`${label} 요청 실패: ${e.message}`); }
     }
-    const [g, fb] = out;
+    const [g, pk, fb] = out;
     g.status === 405 ? ok('/api/pick GET은 405 (AI·DB를 거치지 않음)') : g.status === 0 ? null : bad(`/api/pick GET이 ${g.status}를 돌려줌 (405여야 함)`);
+    pk.status === 400 && pk.text.trim() === '{"error":"bad_input"}'
+      ? ok('/api/pick 선택지 밖 값은 400 {"error":"bad_input"} (틀린 칸은 알려주지 않음)') : pk.status === 0 ? null : bad(`/api/pick 선택지 밖 값이 ${pk.status} ${pk.text.slice(0, 60)}를 돌려줌 (400 bad_input이어야 함) — 배포가 최신인지 확인`);
     fb.status === 400 ? ok('/api/pick/feedback 잘못된 본문은 400') : fb.status === 0 ? null : bad(`/api/pick/feedback 잘못된 본문이 ${fb.status}를 돌려줌 (400이어야 함)`);
     const leaked = out.filter((o) => o.all && (/sk-ant-/.test(o.all) || secrets.some((v) => o.all.includes(v)) || (promptHead.length > 20 && o.all.includes(promptHead))));
     leaked.length === 0 ? ok('/api/pick 응답 본문·헤더에 키·프롬프트 원문 없음') : bad(`응답에 키·프롬프트가 보임: ${leaked.map((o) => o.label).join(', ')}`);
-    note('/api/pick 자체의 입력 검증(400)과 횟수 제한(429)은 실제 호출이 AI를 부를 수 있어 라이브로 확인하지 않음 — 위 정적 점검으로 대신');
+    note('/api/pick 횟수 제한(429)은 정상 요청이 AI를 부를 수 있어 라이브로 확인하지 않음 — 위 정적 점검으로 대신');
   }
 
   let r = await call('/api/admin/games');

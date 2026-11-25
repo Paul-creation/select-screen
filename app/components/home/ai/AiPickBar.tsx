@@ -35,7 +35,10 @@ const TITLE_WHO: Record<number, string> = { 1: '혼자서', 2: '둘이서', 3: '
 const steam = (appid: string | number) => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
 const won = (n: number) => `₩${Math.round(n).toLocaleString('ko-KR')}`;
 
-const fromQuery = (q: AbQuery): Cond => ({ n: q.n ?? q.nTo ?? null, how: q.how, g: q.genres, mood: null });
+const fromQuery = (q: AbQuery): Cond => {
+  const n = q.n ?? q.nTo ?? null;
+  return { n: n == null ? null : Math.min(n, 5), how: q.how, g: q.genres, mood: null }; // 서버는 1~5만 받는다(5 = 5명 이상)
+};
 const nText = (n: number | null) => (n == null ? '' : n === 1 ? '혼자' : n >= 5 ? `${n}명 이상` : `${n}명`);
 
 function CardImage({ c }: { c: Card }) {
@@ -144,7 +147,7 @@ export default function AiPickBar({ games }: { games: any[] | null }) { // eslin
     try {
       const r = await fetch('/api/pick', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', signal: ctrl.signal,
-        body: JSON.stringify({ n: c.n, how: c.how, g: c.g, mood: c.mood, excludeIds: exclude }),
+        body: JSON.stringify({ n: c.n, how: c.how, g: c.g, mood: c.mood, excludeIds: exclude.slice(-50) }), // 서버는 50개까지만 받는다
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { await fail(typeof j.error === 'string' ? j.error : '골라 오지 못했어요. 잠시 뒤에 다시 눌러주세요'); return; }

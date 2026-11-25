@@ -40,8 +40,10 @@ const res = (body: unknown, status = 200) => NextResponse.json(body, { status, h
 export async function POST(req: NextRequest) {
   const started = Date.now();
   let bodyJson: unknown = null;
-  try { bodyJson = await req.json(); } catch { /* 빈 본문은 빈 입력으로 */ }
+  try { bodyJson = await req.json(); } catch { /* 아래에서 400 */ }
+  // 입력 검증은 캐시·횟수 제한·AI 호출보다 먼저 — 400은 횟수에도 하루 상한에도 세지 않고, 어떤 칸이 틀렸는지도 알려주지 않는다
   const input = parsePickInput(bodyJson);
+  if (!input) return res({ error: 'bad_input' }, 400);
   const userId = getSessionUserId(req);
   const key = pickCacheKey(input, userId);
 

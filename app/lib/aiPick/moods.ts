@@ -9,8 +9,8 @@ export type PickHow = (typeof HOW_KEYS)[number];
 export const GENRE_KEYS = ['horror', 'survival', 'drive', 'cook', 'puzzle', 'scifi', 'fantasy', 'racing', 'sports', 'rhythm'] as const;
 export type PickGenre = (typeof GENRE_KEYS)[number];
 
-export const MAX_PICK_N = 16;
-export const MAX_EXCLUDE = 120;
+export const MAX_PICK_N = 5; // 5는 "5명 이상"
+export const MAX_EXCLUDE = 50;
 
 export type MoodRule = {
   label: string;
@@ -49,18 +49,28 @@ export type PickInput = {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const has = <T extends string>(list: readonly T[], v: unknown): v is T => typeof v === 'string' && (list as readonly string[]).includes(v);
 
-// 요청 본문 → 정해진 선택지만 남긴 입력. 모르는 값은 버린다(오류 없이). 내용이 하나도 안 맞아도 빈 입력으로 돌려준다
-export function parsePickInput(body: unknown): PickInput {
-  const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
-  const rawN = typeof o.n === 'number' ? o.n : typeof o.n === 'string' && /^\d{1,2}$/.test(o.n) ? Number(o.n) : null;
-  const n = rawN != null && Number.isInteger(rawN) && rawN >= 1 ? Math.min(rawN, MAX_PICK_N) : null;
-  const how = has(HOW_KEYS, o.how) ? o.how : null;
-  const g = Array.isArray(o.g) ? [...new Set(o.g.filter((x): x is PickGenre => has(GENRE_KEYS, x)))].sort() : [];
-  const mood = has(MOOD_KEYS, o.mood) ? o.mood : null;
-  const excludeIds = Array.isArray(o.excludeIds)
-    ? [...new Set(o.excludeIds.filter((x): x is string => typeof x === 'string' && UUID.test(x)).map((x) => x.toLowerCase()))].slice(0, MAX_EXCLUDE)
-    : [];
-  return { n, how, g, mood, excludeIds };
+// 요청 본문 → 입력. 정해진 키·선택지만 받고, 하나라도 벗어나면 null(= 400). 버리고 계속 진행하지 않는다. 빈 객체({})는 정상(조건 없음)
+// null·undefined는 "고르지 않음"으로 받는다 — 화면이 고르지 않은 칸을 null로 보낸다
+const KEYS = ['n', 'how', 'g', 'mood', 'excludeIds'] as const;
+export function parsePickInput(body: unknown): PickInput | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const o = body as Record<string, unknown>;
+  if (Object.keys(o).some((k) => !(KEYS as readonly string[]).includes(k))) return null;
+  const nil = (v: unknown) => v === undefined || v === null;
+
+  if (!nil(o.n) && !(typeof o.n === 'number' && Number.isInteger(o.n) && o.n >= 1 && o.n <= MAX_PICK_N)) return null;
+  if (!nil(o.how) && !has(HOW_KEYS, o.how)) return null;
+  if (!nil(o.mood) && !has(MOOD_KEYS, o.mood)) return null;
+  if (!nil(o.g) && (!Array.isArray(o.g) || o.g.length > GENRE_KEYS.length || !o.g.every((x) => has(GENRE_KEYS, x)))) return null;
+  if (!nil(o.excludeIds) && (!Array.isArray(o.excludeIds) || o.excludeIds.length > MAX_EXCLUDE || !o.excludeIds.every((x) => typeof x === 'string' && UUID.test(x)))) return null;
+
+  return {
+    n: nil(o.n) ? null : (o.n as number),
+    how: nil(o.how) ? null : (o.how as PickHow),
+    g: nil(o.g) ? [] : [...new Set(o.g as PickGenre[])].sort(),
+    mood: nil(o.mood) ? null : (o.mood as MoodKey),
+    excludeIds: nil(o.excludeIds) ? [] : [...new Set((o.excludeIds as string[]).map((x) => x.toLowerCase()))],
+  };
 }
 
 // 조건이 하나라도 있나 — 없으면 화면이 질문 패널부터 연다 (직접 입력(kw)은 선택지가 아니라 세지 않는다)
