@@ -41,7 +41,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         '메인에서 인원을 고르면 그 인원이 함께할 수 있는 게임이 나와요. 마음에 드는 게임은 상세 페이지에서 내 PC 사양과 가격 기록을 확인할 수 있어요.',
         '찜목록, 내 PC, 비교는 로그인 없이 쓸 수 있어요.',
       ],
-      actions: [{ label: '4명이서 할 게임 보기', href: '/?players=4' }],
+      actions: [{ label: '4명이서 할 게임 보기', href: '/find?n=4' }],
     }],
   },
   {
@@ -56,7 +56,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '메인의 인원 버튼을 누르면 그 인원이 한 판에 함께할 수 있는 게임만 보여줘요.',
           '최대 인원은 모드나 비공식 패치를 빼고 공식 기능만 기준으로 해요. 숫자를 확실히 정하지 못한 게임은 "인원 정보 확인 중"으로 비워 둬요.',
         ],
-        actions: [{ label: '4명으로 찾기', href: '/?players=4' }],
+        actions: [{ label: '4명으로 찾기', href: '/find?n=4' }],
       },
       {
         heading: '필터로 좁히기',
@@ -64,7 +64,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '필터에서 같이 하는 방식, 가격 범위, 진입장벽(낮음·보통·높음), 크로스플레이·전용 서버·P2P, 지금 할인 중을 고를 수 있어요. 정렬은 인기순, 최근 추가순, 할인 큰 순, 낮은 가격순이에요.',
           '고른 조건은 주소에 담겨서, 그 주소를 친구에게 보내면 같은 결과가 열려요.',
         ],
-        actions: [{ label: '진입장벽 낮고 크로스플레이 되는 4명 게임', href: '/?players=4&barrier=low&net=crossplay' }],
+        actions: [{ label: '진입장벽 낮고 크로스플레이 되는 4명 게임', href: '/find?n=4&barrier=low&net=crossplay' }],
       },
       {
         heading: 'AI 추천',
@@ -100,7 +100,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '가격은 매일 새벽 한 번 갱신해요. 구매 전에는 스토어에서 한 번 더 확인해 주세요.',
           '역대 최저가는 IsThereAnyDeal이 기록한 모든 상점의 한국 원화 가격 중 가장 낮았던 값이에요. 지금 Steam 가격이 그 이하면 "역대 최저가", 10% 안쪽으로 비싸면 "최저가 근접"으로 표시해요.',
         ],
-        actions: [{ label: '지금 할인 중인 게임', href: '/?sale=1&sort=discount' }],
+        actions: [{ label: '지금 할인 중인 게임', href: '/find?o=sale&sort=discount' }],
       },
       {
         heading: '할인 주기와 마감',

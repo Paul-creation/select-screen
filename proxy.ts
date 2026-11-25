@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { SITE_URL } from './app/lib/site';
 import { ADMIN_COOKIE, isAdminToken } from './app/lib/adminAuth';
 import { LOGGED_IN_COOKIE } from './app/lib/user/session';
+import { legacyHomeToFind } from './app/lib/abSearch';
 import { AI_CLIENT_COOKIE, AI_CLIENT_MAX_AGE, newAiClientCookie, verifyAiClientCookie } from './app/lib/aiClient';
 
 // 운영(Production) 배포를 배포별 주소(…-abc123.vercel.app)로 열면 대표 주소로 보낸다.
@@ -35,6 +36,12 @@ export function proxy(req: NextRequest) {
       return res;
     }
     previewState = token ? 'bad-cookie' : 'no-cookie';
+  }
+  // 예전 메인 검색 주소(/?players=4&sale=1 같은 필터 쿼리) → /find 로 영구 이동(308). 쿼리는 /find 새 형식으로 바꿔서 넘긴다 (app/lib/abSearch legacyHomeToFind)
+  // /home-member로 직접 들어온 것도 아래에서 / 로 보내므로 여기서는 / 만 본다. 필터가 아닌 쿼리(/?ai=1 등)는 그대로 통과
+  if (req.nextUrl.pathname === '/') {
+    const to = legacyHomeToFind(req.nextUrl.searchParams);
+    if (to) return NextResponse.redirect(new URL(to, req.url), 308);
   }
   // 내부용 /home-member를 주소창에 직접 쳐서 들어오면 / 로 (rewrite된 요청은 proxy를 다시 거치지 않는다)
   if (req.nextUrl.pathname === '/home-member') {

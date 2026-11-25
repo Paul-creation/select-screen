@@ -4,7 +4,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncEx
 import { createPortal } from 'react-dom';
 import GameLink from '../../GameLink';
 import { useRouter } from 'next/navigation';
-import { HOWS, GENRES, EMPTY_QUERY, countFitting, countMatching, isEmptyQuery, queryHref, summaryParts, type AbQuery, type GenreKey, type GenreMode } from '../../../lib/abSearch';
+import { HOWS, GENRES, countFitting, countMatching, hasBarConditions, isEmptyQuery, queryHref, summaryParts, EMPTY_QUERY, type AbQuery, type GenreKey, type GenreMode } from '../../../lib/abSearch';
 import { makeAbCtx, makeKwMatcher } from '../../../lib/abCtx';
 import { useGameIndex } from '../../../lib/useGameIndex';
 import { matchRank } from '../../../lib/searchMatch';
@@ -19,13 +19,14 @@ import './ab.css';
 // variant="results": 결과 화면 맨 위 — 데스크톱은 늘 펼친 막대("다시 찾기"), 휴대폰은 접힌 알약 한 줄
 type Cell = 'who' | 'how' | 'what';
 
-export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home', trailing, onSubmit }: {
+export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home', trailing, onSubmit, countFn }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 게임 칸은 목록(gameIndex)과 같은 느슨한 모양
   games: any[] | null;
   initial?: AbQuery;
   variant?: 'home' | 'results';
   trailing?: ReactNode; // 검색창 오른쪽에 붙일 것 (홈: AI 추천 버튼)
   onSubmit?: (q: AbQuery) => void;
+  countFn?: (q: AbQuery) => number | null; // 결과 화면: 펼친 필터까지 합친 결과 수 (없으면 요약 바 조건만 센다)
 }) {
   const router = useRouter();
   const [q, setQ] = useState<AbQuery>(initial);
@@ -71,14 +72,14 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
   const index = useGameIndex(); // 목록·태그 나무는 메인·결과 화면과 같은 캐시를 쓴다
   const ctx = useMemo(() => makeAbCtx(index.tree), [index.tree]);
   const kwMatch = useMemo(() => makeKwMatcher(index.tree), [index.tree]);
-  const matching = games ? countMatching(games, q, ctx, kwMatch) : null;
+  const matching = countFn ? countFn(q) : games ? countMatching(games, q, ctx, kwMatch) : null;
 
   const sum = summaryParts(q);
   const fits = (n: number) => (games ? countFitting(games, n) : null);
 
   // ---------- 칸 안의 패널 (데스크톱 팝오버와 모바일 시트가 같이 쓴다) ----------
   const who = (
-    <WhoPanel n={q.n} count={q.n ? fits(q.n) : null} onChange={(n) => setQ({ ...q, n })} onClear={() => setQ({ ...q, n: null })} onDone={() => setOpen(null)} />
+    <WhoPanel n={q.n} count={q.n ? fits(q.n) : null} onChange={(n) => setQ({ ...q, n, nTo: null })} onClear={() => setQ({ ...q, n: null, nTo: null })} onDone={() => setOpen(null)} />
   );
   const how = (
     <HowPanel how={q.how} onChange={(h) => { setQ({ ...q, how: q.how === h ? null : h }); }} onClear={() => setQ({ ...q, how: null })} onDone={() => setOpen(null)} />
@@ -93,7 +94,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
     { key: 'what', label: '뭐 할까', value: sum.what, empty: '장르·게임 검색', panel: what },
   ];
 
-  const pillMain = isEmptyQuery(q) ? '누구랑 할 거야?' : [sum.who, sum.how, sum.what].filter(Boolean).join(' · ');
+  const pillMain = !hasBarConditions(q) ? '누구랑 할 거야?' : [sum.who, sum.how, sum.what].filter(Boolean).join(' · ');
 
   return (
     <div className={`ab ab-${variant}`} ref={wrapRef}>
@@ -122,10 +123,10 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
         </div>
 
         {/* ----- 휴대폰 ----- */}
-        <button type="button" className={`ab-pill ab-mobile${isEmptyQuery(q) ? '' : ' has-value'}`} data-tour={variant === 'home' ? 'ab-pill' : undefined} onClick={() => { setSheet(true); setOpen('who'); }} aria-haspopup="dialog">
+        <button type="button" className={`ab-pill ab-mobile${hasBarConditions(q) ? ' has-value' : ''}`} data-tour={variant === 'home' ? 'ab-pill' : undefined} onClick={() => { setSheet(true); setOpen('who'); }} aria-haspopup="dialog">
           <span className="ab-pill-text">
             <span className="ab-pill-main">{pillMain}</span>
-            {isEmptyQuery(q) && variant === 'home' && <span className="ab-pill-sub">인원 · 방식 · 장르</span>}
+            {!hasBarConditions(q) && variant === 'home' && <span className="ab-pill-sub">인원 · 방식 · 장르</span>}
           </span>
           {variant === 'results' ? <span className="ab-pill-edit">바꾸기</span> : <span className="ab-pill-go" aria-hidden="true">→</span>}
         </button>
@@ -157,7 +158,7 @@ export default function AbSearch({ games, initial = EMPTY_QUERY, variant = 'home
               ))}
             </div>
             <div className="ab-sheet-foot">
-              <button type="button" className="ab-clear" onClick={() => setQ({ ...EMPTY_QUERY, opts: q.opts })}>전체 지우기</button>
+              <button type="button" className="ab-clear" onClick={() => setQ({ ...q, n: null, nTo: null, how: null, genres: [], kw: '' })}>전체 지우기</button>
               <button type="button" className="ab-go" onClick={() => submit()}>{matching == null || isEmptyQuery(q) ? '찾기' : `${matching.toLocaleString('ko-KR')}개 찾기`}</button>
             </div>
           </div>

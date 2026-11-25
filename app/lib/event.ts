@@ -59,9 +59,9 @@ export function getCurrentEvent(now: Date = new Date(), previewMonth?: number): 
   return { ...MONTHLY_EVENTS[month - 1], label: `${month}월의 테마` };
 }
 
-// "보러 가기" — 기존 URL 상태 방식(/?r=1&tags=...) 그대로
+// "보러 가기" — /find에 이벤트 태그를 "하나라도"(match=any)로 담는다
 export function eventHref(event: HomeEvent) {
-  return `/?${new URLSearchParams({ r: '1', tags: event.tags.join(','), match: 'any' }).toString()}`;
+  return `/find?${new URLSearchParams({ tags: event.tags.join(','), match: 'any' }).toString()}`;
 }
 
 // 짧은 주소(/halloween) 이동 위치 — 기간 이벤트가 끝난 날(한국 시간) 다음부터는 메인으로

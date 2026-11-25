@@ -3,7 +3,6 @@ import HomeSections, { HomeFirstSection } from './HomeSections';
 import { SITE_NAME, SITE_ALT_NAMES, SITE_URL, SITE_META_DESCRIPTION } from '../../lib/site';
 import { getHotChart } from '../../lib/hotChart';
 import { getPopularPosts } from '../../lib/community';
-import { HOME_FILTER_STYLE_ID } from '../../lib/homeFilter';
 import { getStreamerNamesByGame } from '../../lib/streamerVideos';
 import { getStreamerTheme } from '../../lib/streamerTheme';
 import { getHomeCurators } from '../../lib/curators';
@@ -24,10 +23,6 @@ const websiteJsonLd = {
   description: SITE_META_DESCRIPTION,
   inLanguage: 'ko',
 };
-
-// 필터가 담긴 주소(/?sale=1, /?r=1&p=… 등)로 들어오면, React가 그리기 전 첫 HTML에서 홈 섹션을 숨기고 로딩 막대를 보여준다
-// (홈 화면이 잠깐 보였다가 결과로 바뀌는 깜빡임 방지). useGameFilters가 주소를 읽은 뒤 이 스타일을 지운다
-const HOME_FILTER_SCRIPT = `(function(){try{if(/[?&](r|q|cat|tags|act|ex|barrier|story|net|p|d|free|sale|cmp|players|price|solo|demo|fs)=/.test(location.search)){var s=document.createElement('style');s.id='${HOME_FILTER_STYLE_ID}';s.textContent='.home-only{display:none!important}.home-url-skel{display:block!important}';document.head.appendChild(s)}}catch(e){}})();`;
 
 export default async function HomePage({ member = false }: { member?: boolean }) {
   // 전체 게임 목록은 여기서 보내지 않는다 — 검색·필터용 목록은 첫 화면 뒤에 /api/games/list로 따로 받음 (lib/gameIndex)
@@ -62,14 +57,12 @@ export default async function HomePage({ member = false }: { member?: boolean })
 
   return (
     <main className="page">
-      <script dangerouslySetInnerHTML={{ __html: HOME_FILTER_SCRIPT }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
       <GameGrid
         member={member}
         peopleReady={!!peopleRecs}
         firstSection={<HomeFirstSection peopleRecs={peopleRecs} member={member} homeExcluded={homeExcluded} />}
         sections={lists ? <HomeSections lists={lists} popularPosts={popularPosts} streamerTheme={streamerTheme} curators={curators} /> : undefined}
-        top10Ids={hot.top10Ids}
         hero={hero}
         heroLines={member ? heroLinesData.lines : []}
       />

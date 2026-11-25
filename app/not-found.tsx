@@ -18,7 +18,7 @@ export default function NotFound() {
         <StatusSearch />
         <div className="status-actions">
           <a href="/" className="status-btn">메인으로</a>
-          <a href="/?r=1" className="status-btn">전체 게임 보기</a>
+          <a href="/find" className="status-btn">전체 게임 보기</a>
         </div>
       </div>
     </main>

@@ -33,8 +33,8 @@ export default function PeopleSection({ recs }: { recs: Data | null }) {
       (!chips.free || !!g.is_free) && (!chips.demo || hasDemo(g as ReleaseGame)) && (!chips.sale || (getPriceInfo(g)?.discount ?? 0) > 0));
     return choosePeopleGames(pool, user ? (g) => runsOnMyPc(user, g) : null, SHOW);
   }, [recs, n, myPcActive, pc, chips]);
-  // 지금 켜진 칩을 검색 주소에 그대로 실어 "전체 보기"가 같은 조건으로 열리게
-  const chipQuery = `${chips.free ? '&price=0-0' : ''}${chips.sale ? '&sale=1' : ''}${chips.demo ? '&demo=1' : ''}${chips.fs ? '&fs=1' : ''}`;
+  // 지금 켜진 칩을 /find 주소에 그대로 실어 "전체 보기"가 같은 조건으로 열리게
+  const chipQuery = `${chips.free || chips.sale ? `&o=${[chips.free ? 'free' : '', chips.sale ? 'sale' : ''].filter(Boolean).join(',')}` : ''}${chips.demo ? '&demo=1' : ''}${chips.fs ? '&fs=1' : ''}`;
   // 우당탕 협동 칩이 켜져 있으면 전체 보기는 모음 페이지(/friendslop) — 지금 인원 탭과 무료·할인 칩을 넘긴다 (5는 "5인 이상")
   const fsHref = `/friendslop?players=${n}${chips.free ? '&free=1' : ''}${chips.sale ? '&sale=1' : ''}`;
   const allHref = chips.fs ? fsHref : `${peopleHref(n, myPcActive)}${chipQuery}`;

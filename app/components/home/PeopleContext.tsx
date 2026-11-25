@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { PEOPLE_CHOICES, type PeopleN } from '../../lib/peopleRecs';
-import type { GameFilters } from '../../lib/useGameFilters';
 
 // 메인 인원 선택 상태 — 선택한 인원은 localStorage(people-n)에 저장해 다음 방문에 복원한다 (읽기·쓰기 모두 try/catch, 저장소를 못 쓰면 이 탭에서만 유지)
 // 첫 화면(서버)은 2인 → 마운트 뒤 저장된 값으로 바뀐다 (hydration 불일치 방지)
@@ -23,17 +22,16 @@ const parse = (raw: string | null | undefined): PeopleN => {
   return (PEOPLE_CHOICES as readonly number[]).includes(n) ? (n as PeopleN) : 2;
 };
 
-// filters: 서버에서 그린 홈 섹션 사이에 놓이는 빠른 칩(HomeQuickLinks)이 메인 필터를 쓰도록 GameGrid가 넘겨 준다
-// recsReady: 서버가 인원별 추천 데이터를 보냈는지 — 못 보냈으면 인원 버튼이 아래 추천을 바꾸는 대신 /?players=N 검색으로 이동한다 (PeopleSelect)
+// recsReady: 서버가 인원별 추천 데이터를 보냈는지 — 못 보냈으면 인원 버튼이 아래 추천을 바꾸는 대신 /find?n=N 검색으로 이동한다 (PeopleSelect)
 // chips: 인원 탭 옆 필터 칩(무료·출시 전 데모·지금 할인 중)의 켜짐 — "N인 추천 게임" 카드를 실제로 거른다. 저장하지 않고 이 화면에서만 유지
 export type ChipKey = 'free' | 'demo' | 'sale' | 'fs';
 export type Chips = Record<ChipKey, boolean>;
 const NO_CHIPS: Chips = { free: false, demo: false, sale: false, fs: false };
-type Value = { n: PeopleN; setN: (n: PeopleN) => void; myPcOn: boolean; setMyPcOn: (v: boolean) => void; chips: Chips; toggleChip: (k: ChipKey) => void; filters: GameFilters | null; recsReady: boolean };
-const Ctx = createContext<Value>({ n: 2, setN: () => {}, myPcOn: false, setMyPcOn: () => {}, chips: NO_CHIPS, toggleChip: () => {}, filters: null, recsReady: true });
+type Value = { n: PeopleN; setN: (n: PeopleN) => void; myPcOn: boolean; setMyPcOn: (v: boolean) => void; chips: Chips; toggleChip: (k: ChipKey) => void; recsReady: boolean };
+const Ctx = createContext<Value>({ n: 2, setN: () => {}, myPcOn: false, setMyPcOn: () => {}, chips: NO_CHIPS, toggleChip: () => {}, recsReady: true });
 export const usePeople = () => useContext(Ctx);
 
-export default function PeopleProvider({ children, filters, recsReady = true }: { children: ReactNode; filters: GameFilters | null; recsReady?: boolean }) {
+export default function PeopleProvider({ children, recsReady = true }: { children: ReactNode; recsReady?: boolean }) {
   const raw = useSyncExternalStore<string | null>(subscribe, readRaw, () => null);
   const [myPcOn, setMyPcOn] = useState(false); // 기본 꺼짐 — 사양을 저장해 뒀어도 사용자가 메인에서 직접 켜기 전에는 거르지 않는다
   const [chips, setChips] = useState<Chips>(NO_CHIPS);
@@ -43,6 +41,6 @@ export default function PeopleProvider({ children, filters, recsReady = true }: 
     try { window.localStorage.setItem(KEY, memory); } catch { /* 저장소를 못 쓰면 이 탭에서만 유지 */ }
     window.dispatchEvent(new Event(EVENT));
   }, []);
-  const value = useMemo(() => ({ n: parse(raw), setN, myPcOn, setMyPcOn, chips, toggleChip, filters, recsReady }), [raw, setN, myPcOn, chips, toggleChip, filters, recsReady]);
+  const value = useMemo(() => ({ n: parse(raw), setN, myPcOn, setMyPcOn, chips, toggleChip, recsReady }), [raw, setN, myPcOn, chips, toggleChip, recsReady]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

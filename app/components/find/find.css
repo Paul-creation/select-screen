@@ -1,0 +1,159 @@
+/* 통합 /find — 시안 FindUnified1·2(select-screen-mockups) 값. 색은 brand-tokens.css 토큰(#F4F1EA --ink · #141311 --bg-top · #1E1D1A --surface · #2E2C28 --line · #3A3833 --line-strong · #C9C4B8 --ink-nav · #A9A498 --ink-muted · #7AA6FF --brand-ink · #3D7BFF --brand) */
+/* 선택된 상태는 전부 크림 채움(--ink 배경 + --bg-top 글자). 파란색은 호버 브래킷·"다시 찾기"·✓ 이유에만 */
+
+.fd .ab { max-width: none; margin: var(--sp-3) 0 0; }
+.fd-layout { display: flex; gap: 40px; margin-top: 36px; align-items: flex-start; }
+
+/* ---------- 왼쪽 "더 좁히기" (폭 260px, 칸 안에서만 스크롤) ---------- */
+/* 필터를 펼치거나 접어도 오른쪽 결과 칸(.fd-main)의 폭·배열은 그대로 — 왼쪽은 폭이 고정된 칸이고 길이만 달라진다 */
+.fd-aside { flex: 0 0 260px; width: 260px; min-width: 0; align-self: flex-start; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; }
+.fd-aside-head { display: flex; justify-content: space-between; align-items: baseline; }
+.fd-aside-title { font-size: 13px; font-weight: 900; letter-spacing: 0.1em; color: var(--ink-nav); }
+.fd-clear { padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-muted); text-decoration: underline; background: none; border: 0; cursor: pointer; }
+.fd-clear:hover { color: var(--ink); }
+
+.fd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-chip { padding: 8px 13px; font: inherit; font-size: 13px; font-weight: 700; line-height: 1.25; white-space: nowrap; color: var(--ink-nav); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.fd-chip:hover { color: var(--ink); }
+.fd-chip[aria-pressed="true"] { color: var(--bg-top); background: var(--ink); border-color: var(--ink); }
+.fd-chip.is-zero { color: var(--ink-muted); }
+.fd-chip:disabled { cursor: default; opacity: 1; color: var(--ink-muted); }
+.fd-chip-n { margin-left: 6px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.fd-more-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 14px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.fd-more-btn span { color: var(--ink-muted); }
+.fd-hint { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink-muted); }
+
+.fd-sec { display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.fd-sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; padding: 0; font: inherit; color: var(--ink); text-align: left; background: none; border: 0; cursor: pointer; }
+.fd-sec-title { font-size: 14px; font-weight: 900; }
+.fd-sec-meta { font-size: 13px; color: var(--ink-muted); }
+.fd-sec-meta.is-on { font-weight: 700; color: var(--ink); }
+.fd-note { display: flex; justify-content: space-between; gap: 8px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-nav); }
+.fd-note a, .fd-link { font-weight: 700; color: var(--ink); white-space: nowrap; text-decoration: none; }
+.fd-note a:hover, .fd-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.fd-sub { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.fd-group { display: flex; flex-direction: column; gap: 8px; }
+.fd-group-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+
+.fd-apply { margin-top: 4px; padding: 13px; font: inherit; font-size: 14px; font-weight: 700; color: var(--bg-top); background: var(--ink); border: 0; border-radius: 8px; cursor: pointer; }
+
+/* 구간 슬라이더 — 3px 선 + 16px 동그라미 (손잡이 판은 36px로 넓혀 손가락으로 잡기 쉽게) */
+.fd-range { display: flex; flex-direction: column; gap: 10px; }
+.fd-range-slider { position: relative; height: 36px; touch-action: none; }
+.fd-range-track { position: absolute; left: 18px; right: 18px; top: 50%; height: 3px; transform: translateY(-50%); background: var(--line-strong); }
+.fd-range-fill { position: absolute; top: 0; bottom: 0; background: var(--ink); }
+.fd-range-slider input[type="range"] { position: absolute; inset: 0; width: 100%; height: 36px; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.fd-range-slider input[type="range"]:focus { outline: none; }
+.fd-range-slider input[type="range"]::-webkit-slider-runnable-track { background: none; height: 36px; }
+.fd-range-slider input[type="range"]::-moz-range-track { background: none; }
+.fd-range-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: grab; width: 36px; height: 36px; border: 0; border-radius: 50%; background: radial-gradient(circle, var(--ink) 0 8px, transparent 8.5px); }
+.fd-range-slider input[type="range"]::-moz-range-thumb { pointer-events: auto; cursor: grab; width: 36px; height: 36px; border: 0; border-radius: 50%; background: radial-gradient(circle, var(--ink) 0 8px, transparent 8.5px); }
+.fd-range-slider input[type="range"]:focus-visible::-webkit-slider-thumb { background: radial-gradient(circle, var(--ink) 0 8px, var(--brand) 8.5px 11px, transparent 11.5px); }
+.fd-range-slider input[type="range"]:focus-visible::-moz-range-thumb { background: radial-gradient(circle, var(--ink) 0 8px, var(--brand) 8.5px 11px, transparent 11.5px); }
+.fd-range-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-muted); }
+
+/* 정렬·보기 묶음 버튼 (선택된 칸은 크림 채움) */
+.fd-seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; }
+.fd-seg button { padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-nav); background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
+.fd-seg button:hover { color: var(--ink); }
+.fd-seg button[aria-pressed="true"] { color: var(--bg-top); background: var(--ink); }
+.fd-gm { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-muted); }
+
+/* 분류 나무 · 가능한 활동 (옛 필터 그대로 — 체크 목록) */
+.fd-tree { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.fd-tree .fd-tree { margin: 2px 0 2px 16px; padding-left: 10px; border-left: 1px solid var(--line); }
+.fd-tag-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
+.fd-check { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 13px; color: var(--ink-nav); cursor: pointer; }
+.fd-check input { flex: 0 0 auto; width: 16px; height: 16px; margin: 0; accent-color: var(--ink); }
+.fd-check-name { min-width: 0; overflow-wrap: anywhere; }
+.fd-check-n { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.fd-text-btn { padding: 4px 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-nav); background: none; border: 0; cursor: pointer; white-space: nowrap; }
+.fd-text-btn:hover { color: var(--ink); }
+.fd-acc { display: flex; flex-direction: column; }
+.fd-acc-item { border-top: 1px solid var(--line); padding: 4px 0; }
+.fd-acc-item:first-child { border-top: 0; }
+.fd-acc-head { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); text-align: left; background: none; border: 0; cursor: pointer; }
+.fd-acc-head .fd-sec-meta { margin-left: auto; }
+.fd-acc-head .is-on { font-weight: 700; color: var(--ink); }
+
+/* ---------- 오른쪽 결과 ---------- */
+.fd-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.fd-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.fd-eyebrow { margin: 0; font-size: 13px; font-weight: 900; letter-spacing: 0.1em; color: var(--ink-nav); }
+.fd-title { margin: 6px 0 0; font-size: 26px; font-weight: 900; line-height: 1.25; color: var(--ink); }
+.fd-title strong { font-weight: 900; font-variant-numeric: tabular-nums; }
+
+/* 적용된 필터 칩 — 파란 테두리 없이 surface 배경 */
+.fd-applied { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fd-applied-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; }
+.fd-applied-chip span { color: var(--ink-muted); }
+.fd-applied-chip:hover span { color: var(--ink); }
+
+.fd-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.fd-toolbar-note { margin-left: auto; font-size: 12px; color: var(--ink-muted); }
+.fd-relax { margin: 0; font-size: 14px; color: var(--ink-nav); }
+
+.fd-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.fd-grid { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+
+/* 호버 브래킷 — 평소엔 숨기고, 호버·포커스 때만 카드 전체 네 모서리에 0.15초. 첫 카드에 고정하지 않는다 */
+.fd-hv { position: relative; }
+.fd-brk { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transform: scale(1.01); transition: opacity .15s ease, transform .15s ease; }
+.fd-hv:hover > .fd-brk, .fd-hv:has(:focus-visible) > .fd-brk { opacity: 1; transform: scale(1); }
+.fd-brk i { position: absolute; display: block; width: 16px; height: 16px; border: 0 solid var(--brand); }
+.fd-brk .tl { top: -7px; left: -7px; border-top-width: 3px; border-left-width: 3px; }
+.fd-brk .tr { top: -7px; right: -7px; border-top-width: 3px; border-right-width: 3px; }
+.fd-brk .bl { bottom: -7px; left: -7px; border-bottom-width: 3px; border-left-width: 3px; }
+.fd-brk .br { bottom: -7px; right: -7px; border-bottom-width: 3px; border-right-width: 3px; }
+@media (prefers-reduced-motion: reduce) { .fd-brk { transform: none; transition: opacity .15s ease; } }
+
+/* 카드 안 링크 — 이름 링크를 카드 전체로 늘린다 (버튼은 그 위) */
+.fd-name { font-size: 18px; font-weight: 900; line-height: 1.3; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.fd-name::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.fd-name:focus-visible { outline: none; }
+.fd-meta { font-size: 13px; color: var(--ink-nav); }
+.fd-why { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.fd-why li { padding: 5px 9px; font-size: 12px; font-weight: 700; color: var(--brand-ink); background: color-mix(in srgb, var(--brand) 14%, transparent); border-radius: 4px; }
+.fd-why li.is-warn { color: var(--ink-nav); background: var(--line); }
+.fd-price-label { font-size: 12px; color: var(--ink-nav); }
+.fd-price-now { font-family: var(--font-num); font-size: 22px; font-weight: 900; letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fd-price-sale { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+.fd-price-sale .mn-sale { padding: 2px 6px; font-size: 13px; font-weight: 900; border-radius: 3px; }
+.fd-cmp { position: relative; z-index: 3; flex: 0 0 auto; padding: 7px 11px; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: transparent; border: 1px solid var(--line-strong); border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.fd-cmp:hover { border-color: var(--ink-muted); }
+.fd-cmp[aria-pressed="true"] { color: var(--bg-top); background: var(--ink); border-color: var(--ink); }
+
+/* 행 카드 */
+.fd-row { display: flex; gap: 20px; align-items: center; padding: 14px 20px 14px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.fd-poster { position: relative; flex: 0 0 88px; width: 88px; height: 132px; background: var(--bg-top); border-radius: 4px; overflow: hidden; }
+.fd-poster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fd-row .fd-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.fd-row .fd-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+/* 카드 보기 — 3열 가로 캡슐. 브래킷이 바깥으로 나가야 해서 overflow: hidden 없이 이미지 위쪽 모서리만 둥글게 */
+.fd-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.fd-card-img { display: block; position: relative; aspect-ratio: 460 / 215; background: var(--bg-top); border-radius: 7px 7px 0 0; }
+.fd-card-img img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 7px 7px 0 0; }
+.fd-card .fd-body { display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 14px; }
+.fd-card-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; padding-top: 6px; }
+.fd-card-price { display: flex; flex-direction: column; gap: 2px; }
+
+@media (max-width: 1023px) {
+  .fd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .fd-layout { flex-direction: column; gap: 24px; margin-top: 24px; }
+  .fd-aside { position: static; flex: none; width: 100%; max-height: none; overflow: visible; }
+  .fd-main { width: 100%; }
+  .fd-title { font-size: 22px; }
+  .fd-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-row { flex-wrap: wrap; gap: 14px; padding: 12px; }
+  .fd-poster { flex-basis: 72px; width: 72px; height: 108px; }
+  .fd-row .fd-body { flex: 1 1 calc(100% - 100px); }
+  .fd-row .fd-side { flex: 1 0 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+  .fd-toolbar-note { margin-left: 0; flex-basis: 100%; }
+  .fd-seg { max-width: 100%; overflow-x: auto; }
+}
+.fd-price { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+@media (max-width: 767px) { .fd-price { align-items: flex-start; } }
