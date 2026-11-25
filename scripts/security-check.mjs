@@ -20,7 +20,6 @@ function checkCode() {
   console.log('\n[1] 코드 적용 여부');
   const files = [
     ['app/lib/aiGuard.ts', 'guardedClaudeFetch', 'AI 한도 모듈', 'aiGuard 터미널 패치'],
-    ['app/api/recommend/route.ts', 'guardedClaudeFetch', 'AI 추천 한도', 'aiGuard 터미널 패치'],
     ['app/api/compare-chat/route.ts', 'guardedClaudeFetch', '비교 채팅 한도', 'aiGuard 터미널 패치'],
     ['app/compare/page.tsx', 'guardedClaudeFetch', '상황별 추천도 한도', 'aiGuard 터미널 패치'],
     ['app/compare/page.tsx', 'cacheDb', '비교 캐시 서버 키 사용', '관리자 인증·캐시 패치'],

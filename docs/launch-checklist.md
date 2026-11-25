@@ -172,12 +172,12 @@ curl -sI https://game-info-hub.vercel.app/games/1 | grep -iE '^(HTTP|location)'
 
 - Vercel → 프로젝트 → **Logs** 탭 → 환경 **Production**, 레벨 **Error / Warning** 필터
 - 특정 배포 기준: **Deployments** → 배포 선택 → **Logs** / **Runtime Logs**
-- 상태 코드 500·AI 경로(`/api/recommend`, `/api/compare-chat`) 위주로 볼 것
+- 상태 코드 500·AI 경로(`/api/pick`, `/api/compare-chat`) 위주로 볼 것
 - 메뉴 이름은 Vercel 화면 개편에 따라 다를 수 있음 (확인 필요)
 
 ### AI 한도 사용량 확인 쿼리
 
-한도 (`app/lib/aiGuard.ts`): 사이트 전체 **24시간 150회**, IP당 `recommend` 3회 · `compare-chat` 10회 · `compare-scores` 10회
+한도 (`app/lib/aiGuard.ts`): 사이트 전체 **24시간 300회**(`/api/pick` 포함), IP당 `compare-chat` 10회 · `compare-scores` 10회
 
 ```sql
 -- 최근 24시간 전체 사용량 (150 넘으면 모두 차단)

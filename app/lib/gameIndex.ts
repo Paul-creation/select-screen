@@ -62,28 +62,32 @@ const fsMap = (rows?: { id: string; friendslop: boolean | null }[] | null) => ne
 const fsOf = (g: Record<string, any>, tags: string[] | null | undefined, activities: string[] | null | undefined, manual: Map<string, boolean | null>) => // eslint-disable-line @typescript-eslint/no-explicit-any
   isFriendslop({ ...g, friendslop: manual.get(g.id) ?? null, price: getPriceInfo(g)?.final ?? null, tags, activities_confirmed: activities }) ? { fs: true } : {};
 
-export async function getGameIndex() {
+// ids를 주면 그 게임들만 (알아서 골라줘 후보 — 전체를 읽지 않는다). 칸·모양은 전체 목록과 같다. 한 번에 60개 안팎으로 부른다 (주소 길이)
+export async function getGameIndex(ids?: string[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const only = <Q,>(q: Q, col = 'id'): Q => (ids ? (q as any).in(col, ids) : q);
   // GOTY 배지(goty_awards)는 기록 있는 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 배지 없이
   // 크로스플레이(has_crossplay)도 지원하는 게임 id만 따로 — 마이그레이션 전이라 칸이 없으면 오류를 무시하고 빈 목록
   // 노출 게임이 1,000개를 넘으면 한 번에 다 못 받으므로 모두 1,000행씩 끝까지 읽는다 (정렬은 created_at 최신순 + id로 고정해 페이지가 겹치지 않게)
   // 지금 뜨는 게임 판정(trend_badge·trend_score)도 판정된 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 필터에 걸리는 게임이 없음
   // 출시 예정(release_status·demo_appid·release_date_text)도 출시 예정인 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 모두 출시된 게임으로
   // 스트리머 이름(game_id → 이름들)도 따로 — 못 읽으면 칩만 빠짐
-  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, { data: fsRows }, streamers, { data: posts }] = await Promise.all([
-    readAllPages((from, to) => selectGames(INDEX_FIELDS)
+  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, { data: fsRows }, streamers, { data: posts }, tagIds] = await Promise.all([
+    readAllPages((from, to) => only(selectGames(INDEX_FIELDS))
       .gte('price_history.price', 100)
       .order('created_at', { ascending: false })
       .order('id')
       .order('checked_at', { referencedTable: 'price_history', ascending: false })
       .limit(1, { referencedTable: 'price_history' })
       .range(from, to)),
-    readAllPages((from, to) => selectGames('id, goty_awards').not('goty_awards', 'is', null).order('id').range(from, to)),
-    readAllPages((from, to) => selectGames('id').eq('has_crossplay', true).order('id').range(from, to)),
-    readAllPages((from, to) => selectGames('id, trend_badge, trend_score').not('trend_badge', 'is', null).order('id').range(from, to)),
-    readAllPages((from, to) => selectGames(SOON_FIELDS).eq('release_status', 'coming_soon').order('id').range(from, to)),
-    readAllPages((from, to) => selectGames('id, friendslop').not('friendslop', 'is', null).order('id').range(from, to)), // 수동 지정 — 칸이 아직 없으면 오류를 무시하고 자동 기준만
-    getAllStreamerNames().catch(() => new Map<string, string[]>()),
-    readAllPages((from, to) => supabase.from('curator_posts').select('game_id, post_title, posted_at').eq('post_type', 'single').not('post_title', 'is', null).order('posted_at', { ascending: false }).order('id').range(from, to)),
+    readAllPages((from, to) => only(selectGames('id, goty_awards')).not('goty_awards', 'is', null).order('id').range(from, to)),
+    readAllPages((from, to) => only(selectGames('id')).eq('has_crossplay', true).order('id').range(from, to)),
+    readAllPages((from, to) => only(selectGames('id, trend_badge, trend_score')).not('trend_badge', 'is', null).order('id').range(from, to)),
+    readAllPages((from, to) => only(selectGames(SOON_FIELDS)).eq('release_status', 'coming_soon').order('id').range(from, to)),
+    readAllPages((from, to) => only(selectGames('id, friendslop')).not('friendslop', 'is', null).order('id').range(from, to)), // 수동 지정 — 칸이 아직 없으면 오류를 무시하고 자동 기준만
+    (ids ? getStreamerNamesByGame(ids) : getAllStreamerNames()).catch(() => new Map<string, string[]>()),
+    readAllPages((from, to) => only(supabase.from('curator_posts').select('game_id, post_title, posted_at'), 'game_id').eq('post_type', 'single').not('post_title', 'is', null).order('posted_at', { ascending: false }).order('id').range(from, to)),
+    getGameTagIds(ids),
   ]);
   const quoteById = new Map<string, string>(); // 가장 최근 것 하나 (최신순으로 받아서 처음 본 것)
   for (const p of (posts as { game_id: string; post_title: string | null }[] | null) || []) if (p.post_title?.trim() && !quoteById.has(p.game_id)) quoteById.set(p.game_id, p.post_title);
@@ -93,7 +97,6 @@ export async function getGameIndex() {
   const trendById = new Map((trend || []).map((g) => [g.id, { trend_badge: g.trend_badge, trend_score: g.trend_score }]));
   const soonById = soonMap(soon);
   const fsById = fsMap(fsRows);
-  const tagIds = await getGameTagIds();
   return (list || []).map((g) => {
     const { tags, spec_parsed, activities_confirmed, activities_unsure, description, description_ko, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
     const ids = tagIds?.get(g.id);
@@ -145,9 +148,9 @@ export function specMinOf(parsed: { min?: Partial<SpecMin> | null } | null | und
 }
 
 // 게임 id → 태그 번호 (rank 순). 표가 없거나 비어 있으면 null
-async function getGameTagIds() {
+async function getGameTagIds(ids?: string[]) {
   const map = new Map<string, number[]>();
-  const { data, error } = await readAllPages((from, to) => supabase.from('game_tags').select('game_id, tag_id, rank').order('game_id').order('rank').range(from, to));
+  const { data, error } = await readAllPages((from, to) => (ids ? supabase.from('game_tags').select('game_id, tag_id, rank').in('game_id', ids) : supabase.from('game_tags').select('game_id, tag_id, rank')).order('game_id').order('rank').range(from, to));
   if (error || !data) return null;
   for (const r of data) {
     const list = map.get(r.game_id) || [];
