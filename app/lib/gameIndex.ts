@@ -12,6 +12,7 @@ import { isFriendslop } from './friendslop';
 import { selectGames } from './visibleGames';
 import { readAllPages } from './paged';
 import { isNoKorean } from './cardInfo';
+import { blurbOf } from './blurb';
 import { getAllStreamerNames, getStreamerNamesByGame, STREAMER_NAMES_MAX } from './streamerVideos';
 
 export const INDEX_FIELDS = `
@@ -20,7 +21,7 @@ export const INDEX_FIELDS = `
   has_online_coop, has_local_coop, has_pvp,
   entry_barrier, solo_mode, party_max, session_max, multiplayer_host,
   is_free, price_type, lowest_price, steam_appid, source, cover_image_url, card_image_url, heat_rank,
-  spec_parsed, activities_confirmed, activities_unsure,
+  spec_parsed, activities_confirmed, activities_unsure, description, description_ko,
   review_summary, review_positive_percent, review_total, korean_support, genres, themes,
   price_history(price, discount_percent, checked_at, currency, original_price, sale_ends_at)
 `;
@@ -44,6 +45,13 @@ const gtOf = (genres?: string[] | null, themes?: string[] | null) => ({
   ...(themes?.length ? { themes } : {}),
 });
 
+// 게임 소개 한 줄(blurb) — 큐레이터 한 줄 소개(curator_posts.post_title, 단일 게시물 중 가장 최근) 우선, 없으면 Steam 짧은 설명 한국어 (lib/blurb). 값이 있을 때만 칸을 싣는다
+// 동의(consent_status = granted)한 큐레이터의 글만 읽힌다 — 읽기 정책(RLS)이 거른다. post_title 칸이 아직 없으면 오류를 무시하고 설명만
+const blurbOfGame = (title: string | undefined, ko: string | null | undefined, desc: string | null | undefined) => {
+  const blurb = blurbOf(title, ko, desc);
+  return blurb ? { blurb } : {};
+};
+
 const activitiesOf = (confirmed?: string[] | null, unsure?: string[] | null) => ({
   ...(confirmed?.length ? { activities_confirmed: confirmed } : {}),
   ...(unsure?.length ? { activities_unsure: unsure } : {}),
@@ -61,7 +69,7 @@ export async function getGameIndex() {
   // 지금 뜨는 게임 판정(trend_badge·trend_score)도 판정된 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 필터에 걸리는 게임이 없음
   // 출시 예정(release_status·demo_appid·release_date_text)도 출시 예정인 게임만 따로 — 칸이 아직 없으면 오류를 무시하고 모두 출시된 게임으로
   // 스트리머 이름(game_id → 이름들)도 따로 — 못 읽으면 칩만 빠짐
-  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, { data: fsRows }, streamers] = await Promise.all([
+  const [{ data: list, error }, { data: goty }, { data: cross }, { data: trend }, { data: soon }, { data: fsRows }, streamers, { data: posts }] = await Promise.all([
     readAllPages((from, to) => selectGames(INDEX_FIELDS)
       .gte('price_history.price', 100)
       .order('created_at', { ascending: false })
@@ -75,7 +83,10 @@ export async function getGameIndex() {
     readAllPages((from, to) => selectGames(SOON_FIELDS).eq('release_status', 'coming_soon').order('id').range(from, to)),
     readAllPages((from, to) => selectGames('id, friendslop').not('friendslop', 'is', null).order('id').range(from, to)), // 수동 지정 — 칸이 아직 없으면 오류를 무시하고 자동 기준만
     getAllStreamerNames().catch(() => new Map<string, string[]>()),
+    readAllPages((from, to) => supabase.from('curator_posts').select('game_id, post_title, posted_at').eq('post_type', 'single').not('post_title', 'is', null).order('posted_at', { ascending: false }).order('id').range(from, to)),
   ]);
+  const quoteById = new Map<string, string>(); // 가장 최근 것 하나 (최신순으로 받아서 처음 본 것)
+  for (const p of (posts as { game_id: string; post_title: string | null }[] | null) || []) if (p.post_title?.trim() && !quoteById.has(p.game_id)) quoteById.set(p.game_id, p.post_title);
   if (error || !list) throw new Error(`게임 목록 조회 실패: ${error?.message}`);
   const gotyById = new Map((goty || []).map((g) => [g.id, g.goty_awards]));
   const crossIds = new Set((cross || []).map((g) => g.id));
@@ -84,10 +95,10 @@ export async function getGameIndex() {
   const fsById = fsMap(fsRows);
   const tagIds = await getGameTagIds();
   return (list || []).map((g) => {
-    const { tags, spec_parsed, activities_confirmed, activities_unsure, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
+    const { tags, spec_parsed, activities_confirmed, activities_unsure, description, description_ko, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
     const ids = tagIds?.get(g.id);
     const fs = fsOf(g, tags, activities_confirmed, fsById);
-    return flattenGame({ ...rest, ...fs, ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...gtOf(genres, themes), ...(streamers.has(g.id) ? { streamers: streamers.get(g.id) } : {}), ...(tagIds ? { tag_ids: ids || [] } : { tags }), spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...trendById.get(g.id), ...soonById.get(g.id) });
+    return flattenGame({ ...rest, ...fs, ...blurbOfGame(quoteById.get(g.id), description_ko, description), ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...gtOf(genres, themes), ...(streamers.has(g.id) ? { streamers: streamers.get(g.id) } : {}), ...(tagIds ? { tag_ids: ids || [] } : { tags }), spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...trendById.get(g.id), ...soonById.get(g.id) });
   });
 }
 
@@ -117,7 +128,8 @@ export async function getCardGames(ids: string[]) {
   const tagIds = new Map<string, number[]>();
   for (const r of tagRows || []) tagIds.set(r.game_id, [...(tagIds.get(r.game_id) || []), Number(r.tag_id)]);
   const byId = new Map((list || []).map((g) => {
-    const { tags, spec_parsed, activities_confirmed, activities_unsure, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
+    const { tags, spec_parsed, activities_confirmed, activities_unsure, description, description_ko, review_summary, review_positive_percent, review_total, korean_support, genres, themes, ...rest } = g as typeof g & { tags?: string[] | null };
+    void description; void description_ko; // 카드 조회에는 설명을 싣지 않는다
     void tags; void genres; void themes; // 번호(tag_ids)만 보낸다
     return [g.id, flattenGame({ ...rest, ...fsOf(g, tags, activities_confirmed, fsById), ...reviewOf({ review_summary, review_positive_percent, review_total, korean_support }), ...trendById.get(g.id), ...(streamers.get(g.id)?.length ? { streamers: streamers.get(g.id)!.slice(0, STREAMER_NAMES_MAX) } : {}), tag_ids: tagIds.get(g.id) || [], spec_min: specMinOf(spec_parsed), ...activitiesOf(activities_confirmed, activities_unsure), goty_awards: gotyById.get(g.id), ...(crossIds.has(g.id) ? { has_crossplay: true } : {}), ...soonById.get(g.id) })] as const;
   }));

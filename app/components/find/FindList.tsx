@@ -74,6 +74,7 @@ export function FindRow({ g, i, q, ctx, picked, onCompare }: CardProps) {
       </span>
       <div className="fd-body">
         <GameLink href={`/games/${g.id}`} className="fd-name">{gameName(g)}</GameLink>
+        {g.blurb && <p className="fd-blurb">{g.blurb}</p>}
         {meta && <span className="fd-meta">{meta}</span>}
         <Why g={g} q={q} ctx={ctx} tour={i === 0} />
       </div>
@@ -98,6 +99,7 @@ export function FindCard({ g, i, q, ctx, picked, onCompare }: CardProps) {
       </span>
       <div className="fd-body">
         <GameLink href={`/games/${g.id}`} className="fd-name">{gameName(g)}</GameLink>
+        {g.blurb && <p className="fd-blurb">{g.blurb}</p>}
         {meta && <span className="fd-meta">{meta}</span>}
         <Why g={g} q={q} ctx={ctx} tour={i === 0} />
         <div className="fd-card-foot">

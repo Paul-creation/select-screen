@@ -117,6 +117,8 @@
 .fd-name { font-size: 18px; font-weight: 900; line-height: 1.3; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
 .fd-name::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .fd-name:focus-visible { outline: none; }
+.fd-blurb { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-nav); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 게임 소개 한 줄 — 행 카드는 한 줄 말줄임 */
+.fd-card .fd-blurb { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } /* 카드 보기는 2줄까지 */
 .fd-meta { font-size: 13px; color: var(--ink-nav); }
 .fd-why { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
 .fd-why li { padding: 5px 9px; font-size: 12px; font-weight: 700; color: var(--brand-ink); background: color-mix(in srgb, var(--brand) 14%, transparent); border-radius: 4px; }
