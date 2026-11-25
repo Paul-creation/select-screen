@@ -583,6 +583,14 @@ async function checkCommunity(call, json) {
   }
   if (!latest) note('공개 글이 없어 글 상세 응답 점검은 건너뜀');
 
+  // 도배 점검용 — 5xx·연결 오류(상태 0)는 1초 뒤 한 번만 다시 보낸다. 200·429가 아닌 응답은 상태 코드와 본문 앞 200자를 실패 메시지에 남긴다
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+  const sendRetry = async (send) => {
+    let x = await send();
+    if (x.status === 0 || x.status >= 500) { await sleep(1000); x = await send(); }
+    return x;
+  };
+  const brief = (x) => `상태 ${x.status}, 본문 ${JSON.stringify(x.body).slice(0, 200)}`;
   const post = (b) => call('/api/community/posts', json('POST', { board: 'free', nickname: '보안점검', password: 'check1234', ...b }));
   let r = await post({ title: '__security_test__ 링크', body: 'https://a.com https://b.com https://c.com' });
   r.status === 400 ? ok('링크 3개 글 거절') : bad(`링크 3개 글 응답 ${r.status}`);
@@ -623,17 +631,17 @@ async function checkCommunity(call, json) {
     r.status === 400 ? ok('200자 넘는 의견 거절') : bad(`200자 넘는 의견 응답 ${r.status}`);
     const ids = [];
     try {
-      let limited = false;
+      let limited = false, odd = '';
       for (let i = 0; i < 32 && !limited; i++) {
-        r = await opinion({ body: `__security_test__ ${i}` });
+        r = await sendRetry(() => opinion({ body: `__security_test__ ${i}` }));
         if (r.status === 429) limited = true;
         else if (r.body?.comment?.id) {
           ids.push(r.body.comment.id);
           await admin.from('game_comments').update({ hidden: true }).eq('id', r.body.comment.id);
           if (HASH.test(JSON.stringify(r.body))) { bad('의견 쓰기 응답에 해시가 들어 있음!'); break; }
-        } else break;
+        } else { odd = brief(r); break; }
       }
-      limited ? ok('게임 의견 도배 제한 동작 (하루 30개 넘으면 429)') : bad(`게임 의견 도배 제한 없음 (${ids.length}개까지 저장됨)`);
+      limited ? ok('게임 의견 도배 제한 동작 (하루 30개 넘으면 429)') : bad(`게임 의견 도배 제한 없음 (${ids.length}개까지 저장됨${odd ? `, 막힌 응답: ${odd}` : ''})`);
     } finally {
       if (ids.length) await admin.from('game_comments').delete().in('id', ids);
     }
@@ -641,28 +649,28 @@ async function checkCommunity(call, json) {
 
   const created = [];
   try {
-    let limited = false;
+    let limited = false, odd = '';
     for (let i = 0; i < 12 && !limited; i++) {
-      r = await post({ title: `__security_test__ 도배 ${i}`, body: '도배 제한 점검용 글이에요' });
+      r = await sendRetry(() => post({ title: `__security_test__ 도배 ${i}`, body: '도배 제한 점검용 글이에요' }));
       if (r.status === 429) limited = true;
       else if (r.body?.id) { created.push(r.body.id); await admin.from('posts').update({ hidden: true }).eq('id', r.body.id); }
-      else break;
+      else { odd = brief(r); break; }
     }
-    limited ? ok(`글 도배 제한 동작 (하루 10개 넘으면 429)`) : bad(`글 도배 제한 없음 (${created.length}개까지 저장됨)`);
+    limited ? ok(`글 도배 제한 동작 (하루 10개 넘으면 429)`) : bad(`글 도배 제한 없음 (${created.length}개까지 저장됨${odd ? `, 막힌 응답: ${odd}` : ''})`);
 
     const { data: tmp } = await admin.from('posts')
       .insert({ board: 'free', title: '__security_test__ 댓글 점검', body: '__security_test__', nickname: '보안점검', password_hash: 'x', ip_hash: 'x' })
       .select('id').single();
     if (tmp) {
       created.push(tmp.id);
-      let cLimited = false, n = 0;
+      let cLimited = false, n = 0, cOdd = '';
       for (let i = 0; i < 32 && !cLimited; i++) {
-        r = await call(`/api/community/posts/${tmp.id}/comments`, json('POST', { body: `점검 ${i}`, nickname: '보안점검', password: 'check1234' }));
+        r = await sendRetry(() => call(`/api/community/posts/${tmp.id}/comments`, json('POST', { body: `점검 ${i}`, nickname: '보안점검', password: 'check1234' })));
         if (r.status === 429) cLimited = true;
         else if (r.status === 200) { n++; if (HASH.test(JSON.stringify(r.body))) { bad('댓글 쓰기 응답에 해시가 들어 있음!'); break; } }
-        else break;
+        else { cOdd = brief(r); break; }
       }
-      cLimited ? ok('댓글 도배 제한 동작 (하루 30개 넘으면 429)') : bad(`댓글 도배 제한 없음 (${n}개까지 저장됨)`);
+      cLimited ? ok('댓글 도배 제한 동작 (하루 30개 넘으면 429)') : bad(`댓글 도배 제한 없음 (${n}개까지 저장됨${cOdd ? `, 막힌 응답: ${cOdd}` : ''})`);
     }
   } finally {
     if (created.length) await admin.from('posts').delete().in('id', created);
