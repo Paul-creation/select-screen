@@ -201,12 +201,13 @@ button.sec-more { padding: 0; font-family: inherit; background: none; border: 0;
 /* ---------- 메인 v2 ---------- */
 /* 방문자 히어로 — 높이 최소 704px(헤더 포함, 헤더는 이미지 위에 absolute), 내용은 위에서 300px 아래부터: 제목(60px) → 한 줄 설명(17px) → 검색창, 요소 간격 32px, 아래 72px
    이미지는 Steam library_hero 1장(object-fit: cover, 가운데). 마스크 = 좌우(양 끝 22%를 --bg-top으로) + 위아래(위 16%까지 헤더용 어둡게, 28%부터 56%에서 .72, 86%에서 --bg-top) — 아래 "N인 추천"과 경계 없이 이어진다 */
-.mn-hero { position: relative; box-sizing: border-box; min-height: 704px; padding: 300px 0 72px; text-align: center; }
-.mn-hero .mn-hero-media { display: block; position: absolute; inset: 0; z-index: -1; overflow: hidden; background: var(--bg-top); }
+.mn-hero { --mn-hero-bg-h: 640px; position: relative; box-sizing: border-box; min-height: 704px; padding: 300px 0 72px; text-align: center; }
+.mn-hero .mn-hero-media { display: block; position: absolute; top: 0; left: 0; right: 0; height: var(--mn-hero-bg-h); z-index: -1; overflow: hidden; background: var(--bg-top); }
 .mn-hero .mn-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(0.7) saturate(0.85); }
+/* 배경 층(이미지·scrim·좌우/위아래 마스크)은 전부 top 0 + 높이 --mn-hero-bg-h로 고정 — 히어로가 패널 때문에 길어져도 이미지는 크기·위치 그대로, 아래는 마스크가 --bg-top으로 녹아 이어진다 */
 /* 글자 아래 어두운 층 — 이미지 위·글자 아래. 가운데(제목·검색창 자리)만 어둡게 해서 밝은 이미지에서도 글자가 읽히게 */
-.mn-hero .mn-hero-scrim { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 46% 34% at 50% 60%, rgba(20, 19, 17, .72) 0%, rgba(20, 19, 17, .35) 55%, transparent 100%); }
-.mn-hero::before, .mn-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.mn-hero .mn-hero-scrim { position: absolute; top: 0; left: 0; right: 0; height: var(--mn-hero-bg-h); z-index: -1; pointer-events: none; background: radial-gradient(ellipse 46% 34% at 50% 60%, rgba(20, 19, 17, .72) 0%, rgba(20, 19, 17, .35) 55%, transparent 100%); }
+.mn-hero::before, .mn-hero::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--mn-hero-bg-h); z-index: -1; pointer-events: none; }
 .mn-hero::before { background: linear-gradient(90deg, var(--bg-top) 0%, transparent 22%, transparent 78%, var(--bg-top) 100%); }
 .mn-hero::after { background: linear-gradient(180deg, rgba(20, 19, 17, .55) 0%, rgba(20, 19, 17, 0) 16%, rgba(20, 19, 17, 0) 28%, rgba(20, 19, 17, .72) 56%, var(--bg-top) 86%); }
 .mn-hero-inner { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%; }
@@ -218,7 +219,7 @@ button.sec-more { padding: 0; font-family: inherit; background: none; border: 0;
 .mn-hero-credit a { flex: 0 0 auto; font-size: 12px; line-height: 16px; color: rgba(244, 241, 234, .45); text-decoration: none; white-space: nowrap; transform: rotate(-90deg); pointer-events: auto; }
 .mn-hero-credit a:hover { color: var(--ink); }
 @media (max-width: 767px) {
-  .mn-hero { height: auto; min-height: 0; padding: calc(var(--header-h) + 28px) 0 36px; }
+  .mn-hero { --mn-hero-bg-h: 391px; height: auto; min-height: 0; padding: calc(var(--header-h) + 28px) 0 36px; }
   .mn-hero-inner, .mn-hero .mn-intro { gap: 22px; }
   .mn-hero-sub { font-size: 15px; }
   .mn-hero-credit { display: none; }
