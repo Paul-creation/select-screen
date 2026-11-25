@@ -5,7 +5,7 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 import { createClient } from '@supabase/supabase-js';
 
-const SITE = (process.argv[2] || process.env.SITE_URL || '').replace(/\/$/, '');
+const SITE = (process.argv[2] || process.env.SITE_URL || 'https://select-screen.com').replace(/\/$/, '');
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const anon = createClient(URL_, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -15,6 +15,34 @@ const ok = (m) => { pass++; console.log(`  ✅ ${m}`); };
 const bad = (m, fix) => { fail++; console.log(`  ❌ ${m}${fix ? `\n     → ${fix}` : ''}`); };
 const note = (m) => { warn++; console.log(`  ⚠️  ${m}`); };
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '');
+
+// /api/pick — 정적 점검. 실제 AI 요청은 보내지 않는다
+async function checkPickCode() {
+  console.log('\n[1-b] /api/pick (정적)');
+  const route = read('app/api/pick/route.ts');
+  if (!route) return note('app/api/pick/route.ts 없음 — /api/pick 점검 건너뜀');
+  /const LIMIT_ANON = 10;/.test(route) && /const LIMIT_USER = 30;/.test(route)
+    ? ok('횟수 제한 값: 로그인 전 10회·로그인 후 30회 (시간당)') : bad('횟수 제한 값이 로그인 전 10·후 30이 아님 (app/api/pick/route.ts LIMIT_ANON·LIMIT_USER)');
+  /\(count \?\? 0\) >= \(userId \? LIMIT_USER : LIMIT_ANON\)\) return res\([^)]*429\)/.test(route)
+    ? ok('제한을 넘으면 AI를 부르기 전에 429로 끝남') : bad('횟수 제한 비교·429 응답을 찾지 못함 (AI 호출보다 앞에 있어야 함)');
+  route.indexOf('LIMIT_USER : LIMIT_ANON') > 0 && route.indexOf('LIMIT_USER : LIMIT_ANON') < route.indexOf('client.messages.create')
+    ? ok('횟수 제한 확인이 AI 호출보다 앞') : bad('횟수 제한 확인이 AI 호출보다 뒤에 있음');
+  /parsePickInput\(/.test(route) ? ok('요청 본문을 parsePickInput(정해진 선택지만 통과)으로 거름') : bad('요청 본문을 parsePickInput으로 거르지 않음');
+  try {
+    const { parsePickInput, MAX_PICK_N } = await import(new URL('../app/lib/aiPick/moods.ts', import.meta.url).href);
+    const odd = parsePickInput({ n: 99999, how: '<script>', g: ['nope', 'horror', 7, null], mood: 'evil', excludeIds: ['not-uuid', 5, "'; drop table"] });
+    odd.n <= (MAX_PICK_N ?? 5) && odd.how === null && odd.mood === null && odd.excludeIds.length === 0 && odd.g.length === 1 && odd.g[0] === 'horror'
+      ? ok('선택지 밖 값(이상한 n·how·장르·분위기·id)은 버려짐') : bad(`선택지 밖 값이 그대로 통과: ${JSON.stringify(odd)}`);
+    const empty = parsePickInput('garbage');
+    empty.n === null && empty.how === null && empty.mood === null && empty.g.length === 0 && empty.excludeIds.length === 0
+      ? ok('객체가 아닌 본문은 빈 입력으로 처리됨') : bad('객체가 아닌 본문 처리 이상');
+  } catch (e) { note('parsePickInput 실행 점검 건너뜀: ' + e.message); }
+  const responseLines = route.split('\n').filter((l) => /\bres\(|NextResponse\.json\(/.test(l));
+  const leaky = responseLines.filter((l) => /SYSTEM_PROMPT|userPrompt|\blines\b|process\.env|apiKey/.test(l));
+  leaky.length === 0 ? ok('응답을 만드는 코드에 키·프롬프트가 들어가지 않음') : bad(`응답에 키·프롬프트가 섞일 수 있음: ${leaky.map((l) => l.trim().slice(0, 80)).join(' | ')}`);
+  /console\.\w+\([^)]*process\.env/.test(route) ? bad('로그에 환경변수를 출력 중 (app/api/pick/route.ts)') : ok('로그에 환경변수를 출력하지 않음');
+  /export async function (GET|PUT|DELETE|PATCH)\b/.test(route) ? note('/api/pick에 POST 말고 다른 메서드가 있음') : ok('/api/pick은 POST만 받음');
+}
 
 function checkCode() {
   console.log('\n[1] 코드 적용 여부');
@@ -62,8 +90,16 @@ function checkCode() {
   direct.length === 0 ? ok('한도를 거치지 않는 AI 호출 없음') : bad(`한도 없이 AI를 부르는 파일: ${direct.join(', ')}`);
 
   try {
-    const tracked = execSync('git ls-files').toString().split('\n').filter((f) => /(^|\/)\.env/.test(f));
-    tracked.length === 0 ? ok('.env 파일이 git에 올라가 있지 않음') : bad(`git에 올라간 env 파일: ${tracked.join(', ')}`, '파일 삭제 후 키 전부 재발급');
+    // .env.example은 변수 이름만 적는 파일이라 예외 — 대신 = 뒤에 값이 들어간 줄이 있으면 실패 (주석·빈 값은 통과)
+    const tracked = execSync('git ls-files').toString().split('\n').filter((f) => /(^|\/)\.env/.test(f) && !/(^|\/)\.env\.example$/.test(f));
+    tracked.length === 0 ? ok('.env 파일이 git에 올라가 있지 않음 (.env.example 제외)') : bad(`git에 올라간 env 파일: ${tracked.join(', ')}`, '파일 삭제 후 키 전부 재발급');
+    if (fs.existsSync('.env.example')) {
+      const filled = read('.env.example').split('\n')
+        .map((l, i) => ({ l, i: i + 1 }))
+        .filter(({ l }) => !/^\s*#/.test(l) && /^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?!(?:""|'')?\s*(?:#.*)?$)\S/.test(l))
+        .map(({ i, l }) => `${i}번째 줄 ${l.split('=')[0].trim()}`);
+      filled.length === 0 ? ok('.env.example에 값이 들어간 줄 없음 (이름만)') : bad(`.env.example에 값이 들어간 줄: ${filled.join(', ')}`, '값을 비우고, 이미 커밋됐다면 그 키를 재발급');
+    }
   } catch { note('git 확인 불가'); }
 
   try {
@@ -397,6 +433,32 @@ async function checkSite() {
     return note('사이트에 연결할 수 없어요: ' + e.message);
   }
 
+  // /api/pick — AI가 불리지 않는 요청만 보낸다 (GET은 405, 피드백의 잘못된 요청은 400). 응답 본문·헤더에 키·프롬프트가 없어야 한다
+  {
+    const secrets = [process.env.ANTHROPIC_API_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY].filter((v) => v && v.length >= 12);
+    let promptHead = '';
+    try { promptHead = String((await import(new URL('../app/lib/aiPick/prompt.ts', import.meta.url).href)).SYSTEM_PROMPT || '').split('\n')[0].trim(); } catch {}
+    const probes = [
+      ['GET /api/pick', () => fetch(SITE + '/api/pick')],
+      ['POST /api/pick/feedback (잘못된 본문)', () => fetch(SITE + '/api/pick/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })],
+    ];
+    const out = [];
+    for (const [label, send] of probes) {
+      try {
+        const rr = await send();
+        const text = await rr.text();
+        const head = [...rr.headers.entries()].map(([k, v]) => `${k}: ${v}`).join('\n');
+        out.push({ label, status: rr.status, all: text + '\n' + head });
+      } catch (e) { out.push({ label, status: 0, all: '' }); note(`${label} 요청 실패: ${e.message}`); }
+    }
+    const [g, fb] = out;
+    g.status === 405 ? ok('/api/pick GET은 405 (AI·DB를 거치지 않음)') : g.status === 0 ? null : bad(`/api/pick GET이 ${g.status}를 돌려줌 (405여야 함)`);
+    fb.status === 400 ? ok('/api/pick/feedback 잘못된 본문은 400') : fb.status === 0 ? null : bad(`/api/pick/feedback 잘못된 본문이 ${fb.status}를 돌려줌 (400이어야 함)`);
+    const leaked = out.filter((o) => o.all && (/sk-ant-/.test(o.all) || secrets.some((v) => o.all.includes(v)) || (promptHead.length > 20 && o.all.includes(promptHead))));
+    leaked.length === 0 ? ok('/api/pick 응답 본문·헤더에 키·프롬프트 원문 없음') : bad(`응답에 키·프롬프트가 보임: ${leaked.map((o) => o.label).join(', ')}`);
+    note('/api/pick 자체의 입력 검증(400)과 횟수 제한(429)은 실제 호출이 AI를 부를 수 있어 라이브로 확인하지 않음 — 위 정적 점검으로 대신');
+  }
+
   let r = await call('/api/admin/games');
   r.status === 401 ? ok('로그인 없이 관리자 게임 목록 조회 차단') : bad(`로그인 없이 관리자 조회 가능 (응답 ${r.status})`, '관리자 인증 패치 후 푸시');
 
@@ -605,6 +667,7 @@ async function checkCommunity(call, json) {
 
 console.log('🔒 보안 점검 시작');
 checkCode();
+await checkPickCode();
 await checkDb();
 await checkSite();
 console.log(`\n결과: ✅ ${pass}  ❌ ${fail}  ⚠️ ${warn}`);
