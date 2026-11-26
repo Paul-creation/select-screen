@@ -34,7 +34,7 @@ test('정해진 선택지 안의 값은 통과하고 정리된다', () => {
 });
 
 test('빈 입력은 정상 — 상관없음·고르지 않음(null)도 정상', () => {
-  const empty = { n: null, how: null, g: [], mood: null, excludeIds: [] };
+  const empty = { n: null, how: null, g: [], mood: 'any', excludeIds: [] };
   assert.deepEqual(parsePickInput({}), empty);
   assert.deepEqual(parsePickInput({ n: null, how: null, g: [], mood: null, excludeIds: [] }), empty);
   assert.deepEqual(parsePickInput({ mood: 'any', how: 'any' }), { ...empty, mood: 'any', how: 'any' });
@@ -49,6 +49,13 @@ test('모르는 키가 있으면 거절(400)', () => {
 test('범위 밖 n은 거절 — 1~5만', () => {
   for (const n of [0, 6, 16, 99, -1, 2.5, '3', 'abc', NaN, Infinity, true, [], {}]) assert.equal(parsePickInput({ n }), null, String(n));
   for (const n of [1, 2, 3, 4, 5]) assert.equal(parsePickInput({ n }).n, n);
+});
+
+test('분위기 칸이 없거나 null·""이면 상관없음(any)', () => {
+  for (const body of [{ n: 4 }, { n: 4, mood: undefined }, { n: 4, mood: null }, { n: 4, mood: '' }, { n: 4, mood: 'any' }]) {
+    assert.equal(parsePickInput(body)?.mood, 'any', JSON.stringify(body));
+  }
+  for (const mood of [' ', 'null', 'none', 0, false, []]) assert.equal(parsePickInput({ n: 4, mood }), null, JSON.stringify(mood));
 });
 
 test('목록에 없는 how·mood·장르는 거절', () => {

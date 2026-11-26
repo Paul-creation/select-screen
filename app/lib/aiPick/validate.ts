@@ -7,13 +7,14 @@ export const WINDOW = 30;
 export type Pick = { id: string; reason: string };
 
 // 후보 창 — 점수 순으로 줄 세운 id에서 이미 보여 준 것을 빼고 상위 30개. 그 창에서 3개도 못 남으면 31~60위, 61~90위… 로 넓힌다
-export function pickWindow(rankedIds: string[], excludeIds: Iterable<string>, size = WINDOW): { ids: string[]; widened: boolean } {
+// min: AI가 골라야 하는 개수 (운영진 추천이 1번 자리를 차지하면 2개)
+export function pickWindow(rankedIds: string[], excludeIds: Iterable<string>, size = WINDOW, min = PICK_COUNT): { ids: string[]; widened: boolean } {
   const ex = new Set(excludeIds);
   for (let start = 0; start < rankedIds.length; start += size) {
     const ids = rankedIds.slice(start, start + size).filter((id) => !ex.has(id));
-    if (ids.length >= PICK_COUNT) return { ids, widened: start > 0 };
+    if (ids.length >= min) return { ids, widened: start > 0 };
   }
-  // 전부 훑어도 3개가 안 되면 남은 것 전부 (그래도 모자라면 호출한 쪽이 있는 만큼만 보여 준다)
+  // 전부 훑어도 min개가 안 되면 남은 것 전부 (그래도 모자라면 호출한 쪽이 있는 만큼만 보여 준다)
   return { ids: rankedIds.filter((id) => !ex.has(id)), widened: rankedIds.length > size };
 }
 
@@ -78,25 +79,26 @@ export function fallbackPicks<T extends FactGame & { id: string }>(ranked: T[], 
 
 export const AI_TIMEOUT_MS = 8000;
 
-// AI 호출 → 검증 → 실패하면 점수 상위 3개 + 대체 문구. 다시 묻지 않는다. 타임아웃·예외·빈 응답·검증 실패는 모두 fallback
+// AI 호출 → 검증 → 실패하면 점수 상위 count개 + 대체 문구. 다시 묻지 않는다. 타임아웃·예외·빈 응답·검증 실패는 모두 fallback
 // callAi: 응답 글자를 돌려주는 함수(테스트에서는 mock). 넘긴 signal이 abort되면 그만두어야 한다
 export async function choosePicks<T extends FactGame & { id: string }>(
-  callAi: (signal: AbortSignal) => Promise<string | null>,
+  callAi: (signal: AbortSignal, count: number) => Promise<string | null>,
   candidates: T[], // 점수 순 후보 (AI에게 준 것과 같은 목록)
   n: number | null,
   timeoutMs = AI_TIMEOUT_MS,
+  count = PICK_COUNT, // 고를 개수
 ): Promise<{ picks: Pick[]; fallback: boolean; why?: 'few' | 'empty' | 'invalid' | 'error' }> {
-  const fallback = (why: 'few' | 'empty' | 'invalid' | 'error') => ({ picks: fallbackPicks(candidates, n), fallback: true as const, why });
-  if (candidates.length < PICK_COUNT) return fallback('few'); // 3개를 못 채우면 AI를 부르지 않는다
+  const fallback = (why: 'few' | 'empty' | 'invalid' | 'error') => ({ picks: fallbackPicks(candidates, n, count), fallback: true as const, why });
+  if (candidates.length < count) return fallback('few'); // 개수를 못 채우면 AI를 부르지 않는다
   const ctrl = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const text = await Promise.race([
-      callAi(ctrl.signal),
+      callAi(ctrl.signal, count),
       new Promise<null>((resolve) => { timer = setTimeout(() => { ctrl.abort(); resolve(null); }, timeoutMs); }),
     ]);
     if (!text) return fallback('empty'); // 타임아웃·호출 실패·빈 응답
-    const picks = validatePicks(parseAiJson(text), new Set(candidates.map((c) => c.id)));
+    const picks = validatePicks(parseAiJson(text), new Set(candidates.map((c) => c.id)), count);
     return picks ? { picks, fallback: false } : fallback('invalid');
   } catch {
     return fallback('error');

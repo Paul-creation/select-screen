@@ -39,7 +39,7 @@ async function checkPickCode() {
   const firstWork = Math.min(...["from('ai_pick_cache')", "from('ai_pick_rate')", 'checkGlobalAiCap()', 'client.messages.create'].map((t) => route.indexOf(t)).filter((x) => x > 0));
   iBad > 0 && iBad < firstWork ? ok('입력 검증(400)이 캐시·횟수 제한·AI 호출보다 앞 — 400은 횟수·하루 상한에 세지 않음') : bad('입력 검증(400)이 캐시·횟수 제한·AI 호출보다 앞에 있지 않음');
   const responseLines = route.split('\n').filter((l) => /\bres\(|NextResponse\.json\(/.test(l));
-  const leaky = responseLines.filter((l) => /SYSTEM_PROMPT|userPrompt|\blines\b|process\.env|apiKey/.test(l));
+  const leaky = responseLines.filter((l) => /systemPrompt|userPrompt|\blines\b|process\.env|apiKey/.test(l));
   leaky.length === 0 ? ok('응답을 만드는 코드에 키·프롬프트가 들어가지 않음') : bad(`응답에 키·프롬프트가 섞일 수 있음: ${leaky.map((l) => l.trim().slice(0, 80)).join(' | ')}`);
   /console\.\w+\([^)]*process\.env/.test(route) ? bad('로그에 환경변수를 출력 중 (app/api/pick/route.ts)') : ok('로그에 환경변수를 출력하지 않음');
   /export async function (GET|PUT|DELETE|PATCH)\b/.test(route) ? note('/api/pick에 POST 말고 다른 메서드가 있음') : ok('/api/pick은 POST만 받음');
@@ -438,7 +438,7 @@ async function checkSite() {
   {
     const secrets = [process.env.ANTHROPIC_API_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY].filter((v) => v && v.length >= 12);
     let promptHead = '';
-    try { promptHead = String((await import(new URL('../app/lib/aiPick/prompt.ts', import.meta.url).href)).SYSTEM_PROMPT || '').split('\n')[0].trim(); } catch {}
+    try { promptHead = String((await import(new URL('../app/lib/aiPick/systemPrompt.ts', import.meta.url).href)).systemPrompt()).split('\n')[0].trim(); } catch {}
     const probes = [
       ['GET /api/pick', () => fetch(SITE + '/api/pick')],
       ['POST /api/pick (선택지 밖 값)', () => fetch(SITE + '/api/pick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n: 99, mood: 'evil', excludeIds: 'x', kw: 'x' }) })],

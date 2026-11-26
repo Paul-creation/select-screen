@@ -141,6 +141,22 @@ a.ap-card:hover, a.ap-card:focus-visible { transform: translateY(-3px); border-c
 .ap-now { font-size: 22px; font-weight: 900; }
 .ap-go { font-size: 14px; font-weight: 700; white-space: nowrap; }
 
+/* 운영진 추천(select screen's pick) 카드 — ★ 배지, 위쪽 태그, 2겹 브래킷(항상 켜짐). 결과가 뜨면 0.55초 뒤 브래킷이 조여 들어와 남고, 0.9초 뒤 태그가 튀어나온다 */
+.ap-cards.has-staff { margin-top: 10px; } /* 태그가 위 조건 칩에 붙지 않게 */
+.ap-card.is-staff, a.ap-card.is-staff:hover, a.ap-card.is-staff:focus-visible { border-color: rgba(61, 123, 255, .5); box-shadow: 0 18px 50px rgba(61, 123, 255, .16); }
+.ap-num.is-staff { color: var(--bg-bottom); background: var(--brand); }
+.ap-staff-brk { position: absolute; inset: 0; z-index: 2; pointer-events: none; animation: ap-staff-brk .5s var(--ap-ease) .55s backwards; }
+@keyframes ap-staff-brk { from { opacity: 0; transform: scale(1.07); } to { opacity: 1; transform: scale(1); } }
+.ap-staff-brk i { position: absolute; display: block; border: 0 solid; }
+.ap-staff-brk .tl { top: var(--o); left: var(--o); border-top-width: var(--w); border-left-width: var(--w); }
+.ap-staff-brk .tr { top: var(--o); right: var(--o); border-top-width: var(--w); border-right-width: var(--w); }
+.ap-staff-brk .bl { bottom: var(--o); left: var(--o); border-bottom-width: var(--w); border-left-width: var(--w); }
+.ap-staff-brk .br { bottom: var(--o); right: var(--o); border-bottom-width: var(--w); border-right-width: var(--w); }
+.ap-st-out i { --o: -10px; --w: 4px; width: 26px; height: 26px; border-color: var(--brand); }
+.ap-st-in i { --o: -4px; --w: 2px; width: 12px; height: 12px; border-color: rgba(244, 241, 234, .55); }
+.ap-staff-tag { position: absolute; top: -21px; left: 22px; z-index: 3; padding: 4px 9px; font-family: var(--font-num); font-size: 11px; font-weight: 900; line-height: 1.2; letter-spacing: .08em; white-space: nowrap; color: var(--bg-bottom); background: var(--brand); border-radius: 4px; animation: ap-badge .4s cubic-bezier(.3, 1.6, .5, 1) .9s backwards; }
+.ap-staff-by { margin-top: -6px; font-size: 12px; font-weight: 700; color: var(--brand-ink); animation: ap-fade .4s var(--ap-ease) .22s backwards; }
+
 .ap-actions { animation: ap-fade .4s var(--ap-ease) backwards; animation-delay: calc(var(--ap-last, 2) * .09s + .3s); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--line, #2E2C28); }
 .ap-act-l { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ap-sec { padding: 12px 18px; font-family: inherit; font-size: 15px; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; cursor: pointer; transition: transform .16s var(--ap-ease); }
@@ -177,7 +193,7 @@ a.ap-card:hover, a.ap-card:focus-visible { transform: translateY(-3px); border-c
 }
 @media (prefers-reduced-motion: reduce) {
   .ap-btn, .ap-btn.is-pop, .ap-btn.is-pop .ap-spark, .ap-wrap, .ap-screen, .ap-screen.is-leaving, .ap-cards > li, .ap-card, .ap-num, .ap-reason, .ap-actions, .ap-spin, .ap-dots i, .ap-sk-b,
-  .ap-opt, .ap-sec, .ap-close, .ap-vote button, .ap-backdrop, .ap-panel.ap-asking { animation: none !important; transition: none !important; }
+  .ap-opt, .ap-sec, .ap-close, .ap-vote button, .ap-backdrop, .ap-panel.ap-asking, .ap-staff-brk, .ap-staff-tag, .ap-staff-by { animation: none !important; transition: none !important; }
   .ap-btn:hover, .ap-btn:active, .ap-opt:hover, .ap-opt:active, .ap-sec:hover, .ap-sec:active, .ap-close:hover, .ap-close:active, .ap-vote button:hover, .ap-vote button:active, a.ap-card:hover, a.ap-card:focus-visible { transform: none !important; }
   .ap-phrases > span { animation: none; }
   .ap-phrases > span:first-child { opacity: 1; }

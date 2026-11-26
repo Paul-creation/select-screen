@@ -51,6 +51,7 @@ const has = <T extends string>(list: readonly T[], v: unknown): v is T => typeof
 
 // 요청 본문 → 입력. 정해진 키·선택지만 받고, 하나라도 벗어나면 null(= 400). 버리고 계속 진행하지 않는다. 빈 객체({})는 정상(조건 없음)
 // null·undefined는 "고르지 않음"으로 받는다 — 화면이 고르지 않은 칸을 null로 보낸다
+// 분위기는 칸이 없거나 null·""이면 상관없음(any)으로 통일한다 — 운영진 추천 매칭·캐시 키·로그가 같은 값을 본다
 const KEYS = ['n', 'how', 'g', 'mood', 'excludeIds'] as const;
 export function parsePickInput(body: unknown): PickInput | null {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
@@ -60,7 +61,8 @@ export function parsePickInput(body: unknown): PickInput | null {
 
   if (!nil(o.n) && !(typeof o.n === 'number' && Number.isInteger(o.n) && o.n >= 1 && o.n <= MAX_PICK_N)) return null;
   if (!nil(o.how) && !has(HOW_KEYS, o.how)) return null;
-  if (!nil(o.mood) && !has(MOOD_KEYS, o.mood)) return null;
+  const noMood = nil(o.mood) || o.mood === '';
+  if (!noMood && !has(MOOD_KEYS, o.mood)) return null;
   if (!nil(o.g) && (!Array.isArray(o.g) || o.g.length > GENRE_KEYS.length || !o.g.every((x) => has(GENRE_KEYS, x)))) return null;
   if (!nil(o.excludeIds) && (!Array.isArray(o.excludeIds) || o.excludeIds.length > MAX_EXCLUDE || !o.excludeIds.every((x) => typeof x === 'string' && UUID.test(x)))) return null;
 
@@ -68,7 +70,7 @@ export function parsePickInput(body: unknown): PickInput | null {
     n: nil(o.n) ? null : (o.n as number),
     how: nil(o.how) ? null : (o.how as PickHow),
     g: nil(o.g) ? [] : [...new Set(o.g as PickGenre[])].sort(),
-    mood: nil(o.mood) ? null : (o.mood as MoodKey),
+    mood: noMood ? 'any' : (o.mood as MoodKey),
     excludeIds: nil(o.excludeIds) ? [] : [...new Set((o.excludeIds as string[]).map((x) => x.toLowerCase()))],
   };
 }
