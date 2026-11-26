@@ -13,13 +13,14 @@ import { toUserPc, type MyPc } from '../../../lib/myPc';
 import './aipick.css';
 
 // 메인 검색 바 + "알아서 골라줘" (시안 AiPick.dc.html). 검색 바 끝에 [찾기][✦ 알아서 골라줘] — 조건이 비었으면 질문 패널, 있으면 바로 로딩
+// 운영진 추천(staff)이 오면 1번 카드에 ★ 배지·2겹 브래킷·태그를 단다
 // 결과는 검색 바 바로 아래에 펼친다. 서버(/api/pick)가 DB에서 후보를 거르고 AI는 3개와 이유만 쓴다 — 여기서는 응답을 그리기만 한다
 // 내 PC 사양은 서버로 보내지 않는다(개인정보처리방침) — 카드의 "내 PC OK"는 이 브라우저가 계산한다
 type Cond = { n: number | null; how: PickHow | null; g: PickGenre[]; mood: MoodKey | null };
 type Card = {
   id: string; name: string; steam_appid: string | number | null; cover_image_url: string | null; card_image_url: string | null;
   price_final: number | null; price_discount: number | null; price_original: number | null; is_free: boolean; price_type: string | null;
-  reason: string; badges: string[];
+  reason: string; badges: string[]; staff?: boolean; // staff: 운영진 추천(1번 자리 고정)
 };
 type Result = { picks: Card[]; fallback: boolean; ownedExcluded: boolean; logId: string | null };
 type Phase = 'closed' | 'ask' | 'loading' | 'result' | 'error';
@@ -56,6 +57,7 @@ export default function AiPickBar({ games }: { games: any[] | null }) { // eslin
   const [error, setError] = useState('');
   const [vote, setVote] = useState<'up' | 'down' | null>(null);
   const [shown, setShown] = useState<string[]>([]);
+  const staffRef = useRef<Set<string>>(new Set()); // 받아 본 운영진 추천 게임 id
   const abortRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false); // 패널이 DOM에 있는지(접히는 동안에도 true)
@@ -147,13 +149,15 @@ export default function AiPickBar({ games }: { games: any[] | null }) { // eslin
     try {
       const r = await fetch('/api/pick', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', signal: ctrl.signal,
-        body: JSON.stringify({ n: c.n, how: c.how, g: c.g, mood: c.mood, excludeIds: exclude.slice(-50) }), // 서버는 50개까지만 받는다
+        // 서버는 50개까지만 받는다 — 운영진 추천 게임은 맨 뒤로 보내 잘려 나가지 않게 (빠지면 다시 1번에 나온다)
+        body: JSON.stringify({ n: c.n, how: c.how, g: c.g, mood: c.mood, excludeIds: [...exclude].sort((a, b) => Number(staffRef.current.has(a)) - Number(staffRef.current.has(b))).slice(-50) }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { await fail(typeof j.error === 'string' ? j.error : '골라 오지 못했어요. 잠시 뒤에 다시 눌러주세요'); return; }
       if (!Array.isArray(j.picks) || j.picks.length === 0) { await fail('조건에 맞는 게임을 찾지 못했어요. 조건을 바꿔 볼까요?'); return; }
       await settle();
       if (ctrl.signal.aborted) return;
+      for (const p of j.picks as Card[]) if (p.staff) staffRef.current.add(p.id);
       show('result', () => { setResult(j as Result); setShown((s) => [...s, ...(j.picks as Card[]).map((p) => p.id)]); });
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
@@ -300,17 +304,30 @@ export default function AiPickBar({ games }: { games: any[] | null }) { // eslin
                   </div>
                   <button type="button" className="ap-close" aria-label="닫기" onClick={close}>✕</button>
                 </div>
-                <ol className="ap-cards">
+                <ol className={`ap-cards${result.picks.some((c) => c.staff) ? ' has-staff' : ''}`}>
                   {result.picks.map((c, i) => {
                     const pcs = pcState(c.id);
                     return (
                       <li key={c.id} style={{ '--i': i } as CSSProperties}>
-                        <GameLink href={`/games/${c.id}`} className="ap-card">
-                          <span className="ap-brk" aria-hidden="true"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>
-                          {i === 0 && <span className="ap-brk-intro" aria-hidden="true"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>}
-                          <span className="ap-img"><CardImage c={c} /><span className="ap-num">{i + 1}</span></span>
+                        <GameLink href={`/games/${c.id}`} className={`ap-card${c.staff ? ' is-staff' : ''}`}>
+                          {c.staff ? (
+                            <>
+                              <span className="ap-staff-brk" aria-hidden="true">
+                                <span className="ap-st-out"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>
+                                <span className="ap-st-in"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>
+                              </span>
+                              <span className="ap-staff-tag">✦ select screen&apos;s pick</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="ap-brk" aria-hidden="true"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>
+                              {i === 0 && <span className="ap-brk-intro" aria-hidden="true"><i className="tl" /><i className="tr" /><i className="bl" /><i className="br" /></span>}
+                            </>
+                          )}
+                          <span className="ap-img"><CardImage c={c} />{c.staff ? <span className="ap-num is-staff" aria-hidden="true">★</span> : <span className="ap-num">{i + 1}</span>}</span>
                           <span className="ap-name">{c.name}</span>
                           <span className="ap-reason">“{c.reason}”</span>
+                          {c.staff && <span className="ap-staff-by">— select screen 팀이 직접 해보고 골랐어요</span>}
                           {(c.badges.length > 0 || pcs) && (
                             <span className="ap-checks">
                               {c.badges.slice(0, 4).map((b) => <span key={b} className="ap-check">✓ {b}</span>)}
