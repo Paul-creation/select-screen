@@ -1,11 +1,17 @@
 // 실행: npm test (AI·DB 호출은 mock)
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { registerHooks } from 'node:module';
 import { matchStaffPick, resolveStaffPick, withStaffFirst } from './staffPick.ts';
 import { choosePicks, pickWindow, WINDOW } from './validate.ts';
 import { systemPrompt } from './systemPrompt.ts';
 import { pickCacheKey } from './cacheKey.ts';
 import { parsePickInput } from './moods.ts';
+
+// candidates.ts는 확장자 없이 import하는 파일들을 불러오므로, 이 테스트 안에서만 .ts를 붙여 찾는다
+registerHooks({ resolve: (s, c, next) => next(s.startsWith('.') && !/\.(ts|mjs|js|json)$/.test(s) ? `${s}.ts` : s, c) });
+const { filterByInput } = await import('./candidates.ts');
+const { makeAbCtx, makeKwMatcher } = await import('../abCtx.ts');
 
 const SID = '99999999-9999-4999-8999-999999999999';
 const GID = '11111111-1111-4111-8111-111111111111';
@@ -73,10 +79,10 @@ test('매칭: 여러 개면 priority 높은 것 하나, 같으면 나중에 만�
   assert.equal(matchStaffPick([], cond, NOW), null);
 });
 
-const resolve = ({ rows = [row()], c = {}, owned = null, game = { id: GID, steam_appid: '123' } } = {}) =>
+const resolve = ({ rows = [row()], c = {}, owned = null, game = { id: GID, steam_appid: '123' }, passesFilter = () => true } = {}) =>
   resolveStaffPick({
-    cond: { ...cond, excludeIds: [], ...c }, now: NOW,
-    loadRows: async () => rows, loadGame: async () => game, loadOwned: async () => owned,
+    cond: { ...cond, how: null, g: [], excludeIds: [], ...c }, now: NOW,
+    loadRows: async () => rows, loadGame: async () => game, loadOwned: async () => owned, passesFilter,
   });
 
 test('넣기: 조건이 맞으면 추천과 게임', async () => {
@@ -109,6 +115,34 @@ test('인원만 고른 요청 — 분위기 칸이 없거나 null·""이어도 �
     keys.add(pickCacheKey(input, null, r.row.id));
   }
   assert.equal(keys.size, 1);
+});
+
+// 협동 퍼즐 게임 (공포 아님) — 판정은 AI 후보를 거르는 진짜 함수(filterByInput)
+const WALK = { id: GID, steam_appid: '123', min_players: 2, max_players: 12, has_online_coop: true, has_local_coop: false, has_pvp: false, genres: ['Puzzle', 'Adventure'], themes: ['Comedy', 'Sandbox'], activities_confirmed: ['puzzle', 'social_hang'] };
+const env = { tree: null, ctx: makeAbCtx(null), kw: makeKwMatcher(null), myPc: null, owned: null };
+const filtered = (body) => {
+  const input = parsePickInput(body);
+  return resolve({ c: input, game: WALK, passesFilter: (g) => filterByInput([g], input, env).length > 0 });
+};
+
+test('장르·방식: 고르면 추천 게임도 AI 후보와 같은 판정을 통과해야 한다', async () => {
+  assert.equal(await filtered({ g: ['horror'] }), null); // 인원 없음 + 공포
+  assert.equal((await filtered({ how: 'coop' }))?.row.id, SID); // 인원 없음 + 협동
+  assert.equal(await filtered({ n: 4, mood: 'laugh', g: ['horror'] }), null); // 4명 + 웃고 떠들기 + 공포
+  assert.equal((await filtered({ n: 4, mood: 'laugh', how: 'coop', g: ['puzzle'] }))?.row.id, SID);
+  assert.equal(await filtered({ how: 'pvp' }), null);
+  assert.equal(await filtered({ g: ['puzzle', 'horror'] }), null); // 장르는 고른 것 모두 (AI 후보와 같음)
+});
+
+test('장르·방식을 안 골랐으면(방식 "아무거나" 포함) 판정하지 않는다', async () => {
+  let calls = 0;
+  const passesFilter = () => { calls++; return false; };
+  assert.ok(await resolve({ passesFilter }));
+  assert.ok(await resolve({ c: { how: 'any' }, passesFilter }));
+  assert.equal(calls, 0);
+  assert.equal(await resolve({ c: { how: 'coop' }, passesFilter }), null);
+  assert.equal(await resolve({ c: { g: ['horror'] }, passesFilter }), null);
+  assert.equal(calls, 2);
 });
 
 const C = Array.from({ length: 10 }, (_, i) => ({ id: `g${i}`, max_players: 4, has_online_coop: true }));

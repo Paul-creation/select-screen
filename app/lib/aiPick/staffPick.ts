@@ -28,19 +28,23 @@ export function matchStaffPick(rows: StaffPickRow[], cond: Cond, now: Date): Sta
 type Game = { id: string; steam_appid?: string | number | null };
 
 // 이번 응답에 넣을 운영진 추천 — 없으면 null. 맞는 것 하나를 먼저 정한 뒤, 그 게임을 이미 보여 줬거나(excludeIds) Steam에 갖고 있으면 넣지 않는다
+// 장르·방식을 골랐으면 추천 게임도 AI 후보와 같은 판정(passesFilter)을 통과해야 한다 (방식 "아무거나"는 고르지 않은 것)
 // (다음 순위로 넘기지 않는다 — "다시 골라줘"를 누르면 AI 추천만 나온다). 게임을 못 읽으면(숨김 등)도 넣지 않는다
 export async function resolveStaffPick<G extends Game>(o: {
-  cond: Cond & { excludeIds: string[] };
+  cond: Cond & { how: string | null; g: string[]; excludeIds: string[] };
   now: Date;
   loadRows: () => Promise<StaffPickRow[]>;
   loadGame: (id: string) => Promise<G | null>;
   loadOwned: () => Promise<ReadonlySet<number> | null>;
+  passesFilter: (game: G) => boolean | Promise<boolean>;
 }): Promise<{ row: StaffPickRow; game: G } | null> {
   const row = matchStaffPick(await o.loadRows(), o.cond, o.now);
   if (!row || o.cond.excludeIds.includes(row.game_id.toLowerCase())) return null;
   const [game, owned] = await Promise.all([o.loadGame(row.game_id), o.loadOwned()]);
   if (!game) return null;
   if (game.steam_appid != null && owned?.has(Number(game.steam_appid))) return null;
+  const chose = o.cond.g.length > 0 || (!!o.cond.how && o.cond.how !== 'any');
+  if (chose && !(await o.passesFilter(game))) return null;
   return { row, game };
 }
 

@@ -10,7 +10,7 @@ import { badgesFor } from '../../lib/abSearch';
 import { gameName } from '../../lib/gameName';
 import { parsePickInput } from '../../lib/aiPick/moods';
 import { pickCacheKey, CACHE_HOURS } from '../../lib/aiPick/cacheKey';
-import { inputToQuery, rankCandidates } from '../../lib/aiPick/candidates';
+import { filterByInput, inputToQuery, rankCandidates } from '../../lib/aiPick/candidates';
 import { gameLine, systemPrompt, userPrompt } from '../../lib/aiPick/prompt';
 import { BATCH, loadGames, poolIds } from '../../lib/aiPick/loadCandidates';
 import { AI_TIMEOUT_MS, PICK_COUNT, WINDOW, choosePicks, pickWindow } from '../../lib/aiPick/validate';
@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const exclude = new Set(input.excludeIds);
   const ownedP = userId ? getOwnedAppids(userId).catch(() => null) : Promise.resolve(null);
+  const treeP = loadTagTree().catch(() => null);
+  const filterEnv = (tree: Awaited<typeof treeP>) => ({ tree, ctx: makeAbCtx(tree), kw: makeKwMatcher(tree), myPc: null });
   // 운영진 추천 — 캐시 키에 들어가서 캐시보다 먼저 정한다. 읽기에 실패하면 추천 없이 진행
   const staffP = resolveStaffPick({
     cond: input,
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
     },
     loadGame: async (id) => (await loadGames([id]))[0] ?? null,
     loadOwned: () => ownedP,
+    passesFilter: async (game) => filterByInput([game], input, { ...filterEnv(await treeP), owned: null }).length > 0, // AI 후보와 같은 판정
   }).catch((e) => { console.error('알아서 골라줘 운영진 추천 조회 실패:', (e as Error).message); return null; });
   const cacheP = staffP.then(async (staff) => {
     const key = pickCacheKey(input, userId, staff?.row.id ?? null);
@@ -87,9 +90,9 @@ export async function POST(req: NextRequest) {
   // 후보 — 조건으로 DB에서 먼저 걸러 인기순 상위부터 60개씩만 읽는다 (전체 목록을 읽지 않음). 로그인했으면 Steam 보유 게임(저장된 공개 목록)을 뺀다
   // 내 PC 사양은 브라우저에만 있어 서버는 모른다 (개인정보처리방침)
   const dataP = (async () => {
-    const [tree, owned] = await Promise.all([loadTagTree().catch(() => null), ownedP]);
-    const ctx = makeAbCtx(tree);
-    const env = { tree, ctx, kw: makeKwMatcher(tree), myPc: null, owned: owned ? (a: number | null | undefined) => (a == null ? false : owned.has(Number(a))) : null };
+    const [tree, owned] = await Promise.all([treeP, ownedP]);
+    const env = { ...filterEnv(tree), owned: owned ? (a: number | null | undefined) => (a == null ? false : owned.has(Number(a))) : null };
+    const { ctx } = env;
     let ranked: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
     const loaded: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
     const seen = new Set<string>();
