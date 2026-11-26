@@ -11,7 +11,7 @@ const time = (s: string | null | undefined) => (s ? Date.parse(s) : NaN);
 
 function matches(r: StaffPickRow, c: Cond, now: number): boolean {
   if (r.active !== true || c.n == null || !r.players?.includes(c.n)) return false;
-  if (r.moods?.length && !r.moods.includes(c.mood ?? 'any')) return false; // 분위기를 안 골랐으면 상관없음(any)과 같게
+  if (r.moods?.length && !r.moods.includes(c.mood || 'any')) return false; // 분위기를 안 골랐으면 상관없음(any)과 같게
   if (r.starts_at && !(time(r.starts_at) <= now)) return false;
   if (r.ends_at && !(now < time(r.ends_at))) return false;
   return true;

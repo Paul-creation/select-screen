@@ -5,6 +5,7 @@ import { matchStaffPick, resolveStaffPick, withStaffFirst } from './staffPick.ts
 import { choosePicks, pickWindow, WINDOW } from './validate.ts';
 import { systemPrompt } from './systemPrompt.ts';
 import { pickCacheKey } from './cacheKey.ts';
+import { parsePickInput } from './moods.ts';
 
 const SID = '99999999-9999-4999-8999-999999999999';
 const GID = '11111111-1111-4111-8111-111111111111';
@@ -83,6 +84,17 @@ test('제외: 게임을 못 읽으면(숨김 등) 없음, 인원을 안 고르�
   const r = await resolveStaffPick({ cond: { n: null, mood: null, excludeIds: [] }, now: NOW, loadRows: async () => { read++; return [row()]; }, loadGame: async () => ({ id: GID }), loadOwned: async () => null });
   assert.equal(r, null);
   assert.equal(read, 0);
+});
+
+test('인원만 고른 요청 — 분위기 칸이 없거나 null·""이어도 추천이 들어가고 캐시 키가 같다', async () => {
+  const keys = new Set();
+  for (const body of [{ n: 4 }, { n: 4, mood: null }, { n: 4, mood: '' }, { n: 4, mood: 'any' }]) {
+    const input = parsePickInput({ how: null, g: [], excludeIds: [], ...body });
+    const r = await resolve({ c: input });
+    assert.equal(r?.row.id, SID, JSON.stringify(body));
+    keys.add(pickCacheKey(input, null, r.row.id));
+  }
+  assert.equal(keys.size, 1);
 });
 
 const C = Array.from({ length: 10 }, (_, i) => ({ id: `g${i}`, max_players: 4, has_online_coop: true }));
