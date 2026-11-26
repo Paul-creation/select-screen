@@ -27,8 +27,14 @@ test('매칭: 인원', () => {
 test('매칭: 분위기 — 목록에 있어야 하고, 비어 있으면 모든 분위기(고르지 않음 포함)', () => {
   assert.ok(match({}, { n: 4, mood: 'any' }));
   assert.equal(match({}, { n: 4, mood: 'scary' }), null);
-  assert.equal(match({}, { n: 4, mood: null }), null);
   for (const moods of [[], null]) for (const mood of ['scary', 'compete', null]) assert.ok(match({ moods }, { n: 4, mood }));
+});
+
+test('매칭: 분위기를 안 골랐으면 상관없음(any)과 같게', () => {
+  for (const mood of [null, undefined]) {
+    assert.ok(match({}, { n: 4, mood }));
+    assert.equal(match({ moods: ['laugh', 'brain'] }, { n: 4, mood }), null);
+  }
 });
 
 test('매칭: active·기간', () => {
