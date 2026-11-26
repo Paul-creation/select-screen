@@ -10,7 +10,8 @@ type Cond = { n: number | null; mood: string | null };
 const time = (s: string | null | undefined) => (s ? Date.parse(s) : NaN);
 
 function matches(r: StaffPickRow, c: Cond, now: number): boolean {
-  if (r.active !== true || c.n == null || !r.players?.includes(c.n)) return false;
+  if (r.active !== true) return false;
+  if (c.n != null && !r.players?.includes(c.n)) return false; // 인원을 안 골랐으면 인원 조건은 통과 (분위기 조건은 그대로 본다)
   if (r.moods?.length && !r.moods.includes(c.mood || 'any')) return false; // 분위기를 안 골랐으면 상관없음(any)과 같게
   if (r.starts_at && !(time(r.starts_at) <= now)) return false;
   if (r.ends_at && !(now < time(r.ends_at))) return false;
@@ -35,7 +36,6 @@ export async function resolveStaffPick<G extends Game>(o: {
   loadGame: (id: string) => Promise<G | null>;
   loadOwned: () => Promise<ReadonlySet<number> | null>;
 }): Promise<{ row: StaffPickRow; game: G } | null> {
-  if (o.cond.n == null) return null;
   const row = matchStaffPick(await o.loadRows(), o.cond, o.now);
   if (!row || o.cond.excludeIds.includes(row.game_id.toLowerCase())) return null;
   const [game, owned] = await Promise.all([o.loadGame(row.game_id), o.loadOwned()]);

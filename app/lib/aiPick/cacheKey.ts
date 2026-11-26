@@ -6,7 +6,7 @@ const VERSION = 'v2'; // 프롬프트·점수 규칙을 바꾸면 올려서 옛 
 
 type KeyInput = { n: number | null; how: string | null; g: string[]; mood: string | null; excludeIds: string[] };
 
-// 같은 뜻이면 같은 키 — 장르·제외 목록은 정렬·중복 제거, 모르는 칸은 null. 분위기 없음(null·"")은 상관없음(any)과 같다. 사용자 id는 해시에만 섞고 원문은 남지 않는다
+// 같은 뜻이면 같은 키 — 장르·제외 목록은 정렬·중복 제거, 모르는 칸(인원 없음 포함)은 null. 분위기 없음(null·"")은 상관없음(any)과 같다. 사용자 id는 해시에만 섞고 원문은 남지 않는다
 export function pickCacheKey(i: KeyInput, userId: string | null, staffPickId: string | null = null): string {
   const norm = {
     v: VERSION,

@@ -37,6 +37,15 @@ test('분위기 없음(없는 칸·null·"")과 상관없음(any)은 같은 키,
   assert.notEqual(pickCacheKey({ ...base, mood: 'laugh' }, null), any);
 });
 
+test('인원 없음(없는 칸·null)은 같은 키, 인원을 고른 것과는 다른 키', () => {
+  const none = pickCacheKey({ ...base, n: null }, null);
+  const noN = { ...base };
+  delete noN.n;
+  assert.equal(pickCacheKey(noN, null), none);
+  assert.equal(pickCacheKey({ ...base, n: undefined }, null), none);
+  assert.notEqual(pickCacheKey({ ...base, n: 4 }, null), none);
+});
+
 test('옛 규칙(v1)으로 만든 캐시 키와는 겹치지 않는다', () => {
   const i = { n: 4, how: null, g: [], mood: null, excludeIds: [] };
   for (const mood of [null, 'any']) {

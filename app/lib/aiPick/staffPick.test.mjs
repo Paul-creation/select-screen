@@ -20,7 +20,6 @@ const match = (extra, c = cond) => matchStaffPick([row(extra)], c, NOW);
 test('매칭: 인원', () => {
   assert.ok(match({}));
   assert.equal(match({}, { n: 3, mood: 'laugh' }), null);
-  assert.equal(match({}, { n: null, mood: 'laugh' }), null);
   assert.equal(match({ players: null }), null);
   assert.ok(match({ players: [2, 4] }, { n: 2, mood: 'laugh' }));
 });
@@ -29,6 +28,25 @@ test('매칭: 분위기 — 목록에 있어야 하고, 비어 있으면 모든 
   assert.ok(match({}, { n: 4, mood: 'any' }));
   assert.equal(match({}, { n: 4, mood: 'scary' }), null);
   for (const moods of [[], null]) for (const mood of ['scary', 'compete', null]) assert.ok(match({ moods }, { n: 4, mood }));
+});
+
+test('매칭: 인원 없음 + 상관없음(any)·분위기 없음(완전히 빈 입력) → 추천, 인원 없음 + 무서운 거 → 없음, 2명 + any → 없음', async () => {
+  const pick = async (body) => (await resolve({ c: { n: undefined, mood: undefined, ...parsePickInput(body) } }))?.row.id ?? null;
+  assert.equal(await pick({ mood: 'any' }), SID);
+  assert.equal(await pick({ n: null, mood: 'any' }), SID);
+  for (const body of [{}, { n: null, mood: null }, { n: null, how: null, g: [], mood: '', excludeIds: [] }]) assert.equal(await pick(body), SID, JSON.stringify(body));
+  assert.equal(await pick({ mood: 'scary' }), null);
+  assert.equal(await pick({ n: 2, mood: 'any' }), null);
+  for (const n of [null, undefined]) {
+    assert.ok(match({}, { n, mood: 'any' }));
+    assert.ok(match({ players: null }, { n, mood: null }));
+    assert.equal(match({ active: false }, { n, mood: 'any' }), null);
+  }
+});
+
+test('인원 없이 와도 이미 보여 줬거나 갖고 있으면 넣지 않는다', async () => {
+  assert.equal(await resolve({ c: { n: null, excludeIds: [GID] } }), null);
+  assert.equal(await resolve({ c: { n: null }, owned: new Set([123]) }), null);
 });
 
 test('매칭: 분위기를 안 골랐으면 상관없음(any)과 같게', () => {
@@ -78,12 +96,8 @@ test('제외: Steam 라이브러리에 있으면 없음 (appid가 글자여도)'
   assert.ok(await resolve({ owned: new Set([123]), game: { id: GID, steam_appid: null } }));
 });
 
-test('제외: 게임을 못 읽으면(숨김 등) 없음, 인원을 안 고르면 표를 읽지 않는다', async () => {
+test('제외: 게임을 못 읽으면(숨김 등) 없음', async () => {
   assert.equal(await resolve({ game: null }), null);
-  let read = 0;
-  const r = await resolveStaffPick({ cond: { n: null, mood: null, excludeIds: [] }, now: NOW, loadRows: async () => { read++; return [row()]; }, loadGame: async () => ({ id: GID }), loadOwned: async () => null });
-  assert.equal(r, null);
-  assert.equal(read, 0);
 });
 
 test('인원만 고른 요청 — 분위기 칸이 없거나 null·""이어도 추천이 들어가고 캐시 키가 같다', async () => {
