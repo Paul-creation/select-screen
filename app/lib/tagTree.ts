@@ -43,7 +43,11 @@ export function buildTree(dict: TagDict): TagTree {
 // 사전은 첫 화면 뒤에 따로 받는다 (메인 첫 로드 JS에 싣지 않음)
 let dictPromise: Promise<TagTree> | null = null;
 export function loadTagTree() {
-  if (!dictPromise) dictPromise = import('./tag-search-dict.json').then((m) => buildTree(m.default as unknown as TagDict));
+  if (!dictPromise) {
+    dictPromise = import('./tag-search-dict.json')
+      .then((m) => buildTree(m.default as unknown as TagDict))
+      .catch((error) => { dictPromise = null; throw error; }); // 실패는 기억하지 않는다 — 다음에 다시 받음
+  }
   return dictPromise;
 }
 
