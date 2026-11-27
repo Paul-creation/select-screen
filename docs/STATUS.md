@@ -184,7 +184,6 @@
 - 메인 순서: 이벤트 배너(900px 미만에서는 한 줄 띠) → h1 → 설명 → 검색 → 인원 → 내 PC 바 → 인원별 추천 → 빠른 칩 3개 → 찜 추천 → 지금 뜨는 게임 → 이번주의 게임(h2 제목 + 이번 주 할인 마감 링크) → 스트리머 → 인기 게시물(기준 이상일 때만)
 
 ## 진행 중
-- 머지 후 확인 대기(사용자): fix/search-and-games — select-screen.com 헤더 검색 결과, Network에서 /api/games/list 차단 시 실패 문구·"다시 시도", 새 게임 3개 상세
 - 머지 후 확인 대기(사용자): feat/staff-pick — select-screen.com에서 4명·빈 입력일 때 Big Walk 1번, 공포를 고르면 AI 3장, "다시 골라줘" 뒤 AI 3장, 375px 태그·브래킷. security-check에는 staff_picks 권한 점검이 없음(11/26 anon 읽기 차단은 따로 확인)
 - 설정 대기(사용자): perf/curator-isr — Supabase 대시보드 Database → Webhooks에서 curators·curator_posts(Insert·Update·Delete) 웹훅을 만들어 POST https://select-screen.com/api/admin/revalidate, 헤더 x-admin-key(ADMIN_REVALIDATE_KEY 값)·Content-Type application/json으로 보내기. 그 전에는 SQL로 동의·게시물을 바꾼 뒤 직접 revalidate를 불러야 함(안 하면 최대 24시간 지연). 운영에서 curators 한 행 수정 뒤 /c/<핸들> 반영 확인
 - 큐레이터 대기열 SQL 실행 대기(사용자): 겜로그 게시물 10개(게임 20개) — /workspaces/reports/gamelog-queue.sql. 실행 뒤 import-curator-queue 미리보기 → --apply로 가져오기. 가져온 appid: One More Lawn 5378110·TANUKI 3218570·HANDS OVER 4661070·QUIET 4228630·Dumpster Gang 2870790·Crypto in a Haystack 5330680·Mayday Airways 5460910·River Drift 4382680·Red Rust Pioneers 3664440·예비군 5367010·Grave Mistakes(기막힌 상조회사) 4635290·My Dirty Little Lake 5375170·Supermarket Chaos 4800590·Never Sort By Color 4876650·DinoBones 5064340·Bunker Tidy Up 5212940·Tidy Up the Flower Shop 5221510·Leaf it Alone 3981100·Orion Blue 4264000·HAPPY PROPAGANDA 4950600
