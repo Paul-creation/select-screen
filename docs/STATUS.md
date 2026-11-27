@@ -1,6 +1,6 @@
 # Select Screen 현재 상황
 
-기준: 2026-11-26 (main 22bd31e)
+기준: 2026-11-27 (main 209ed5a)
 
 ## 개요
 - 친구랑 할 게임을 인원·가격·할인·진입장벽·PC 사양으로 비교하는 한국어 사이트
@@ -16,6 +16,7 @@
 - 5시간 한도 80%를 넘으면 큰 작업은 새로 시작하지 않음
 
 ## main 반영 (최근)
+- 11/27: fix/search-and-games — 헤더 게임 검색이 목록 로드 실패·무응답 때 로딩 문구에 멈추던 문제: 8초 타임아웃과 "검색을 불러오지 못했어요 · 다시 시도"(app/lib/indexStore), 받은 목록은 새로고침 전까지 메모리 재사용(기존 5분), 태그 사전 로드 실패는 다음에 다시 받음. 같은 목록을 쓰는 메인 검색·/find·내 PC·라이브러리·찜목록에도 적용. 프로덕션의 최초 실패 원인은 재현·확인 못 함(요청은 200, br 약 585KB). 인스타 소개 게임 DUNK(4591520, 출시 예정)·COCOON(1497440)·Split Brain Samsara(4370210)를 bulk-import --curator --apply로 추가(fill-new-game 23단계 실패 0). build·test 659개 통과
 - 11/26: feat/staff-pick — '알아서 골라줘' 운영진 추천(select screen's pick): staff_picks 표(RLS, 서버만 읽음)·ai_pick_log.staff_pick_id(SQL 실행 완료), 첫 추천 Big Walk(4명, laugh·brain·chill·any). 조건이 맞으면 1번 고정(★·2겹 브래킷·태그), AI는 나머지 2개만. 인원이 비면 인원 조건 통과, 분위기 없음은 any, 장르·방식을 고르면 추천 게임도 AI 후보와 같은 판정을 통과해야 함. 이미 보여 줬거나 Steam 보유면 제외. 추천 추가·교체는 staff_picks 행만 바꾸면 됨. security-check ✅154 ❌0
 - 11/21: insta/noah-setup — 인스타 담당(노아) Codespace 준비: .devcontainer(Node 22, ffmpeg·zip·Playwright 크롬·Python 3.12 설치), scripts/insta/requirements.txt(faster-whisper·librosa·numpy 고정), .env.example 인스타 섹션, docs/insta/README.md(첫 실행부터 릴스 하나까지·Drive 자산 받기·brand 파일 출처 표), CLAUDE.md '인스타 담당' 규칙(노아는 scripts/insta·data/insta·docs/insta·public/insta 안만 바뀌면 main 직접 머지). 인스타 스크립트 6개의 SUPABASE_SERVICE_ROLE_KEY 폴백을 없애 anon 키만 씀(전부 games·game_similar 읽기, anon 결과 동일 확인). outro-voice 파일은 레포가 공개라 git 제외(드라이브 공유). 남은 것: Drive 링크 채우기, sfx-pop.mp3 확보, 효과음·BGM 라이선스 확인, weekly.yml만 Node 24
 - 11/20: perf/game-detail — 게임 상세: 게임 조회를 React cache()로 메타데이터와 통합(영상·스트리머는 본 조회에서 빼 VideosSection으로 분리), 인기 순위·태그·큐레이터를 게임 조회와 동시에, 시리즈·비슷한 게임은 GameBottom에서 병렬(순차 5→약 3단계), 영상·시리즈·비슷한 게임·의견·관련 게시물을 Suspense로. vercel.json regions ["icn1"]. 갱신 후 예열: run-steps가 상세 페이지를 비운 뒤 그 게임 중 heat_rank 상위 WARM_TOP_N(200, scripts/lib/revalidateGames.mjs)개를 select-screen.com/games/<id>로 GET(동시 5·200ms 간격, 실패는 로그만, 개수·시간을 갱신 로그에 남김). 카드 링크는 components/GameLink(prefetch={false} + 호버·포커스·터치 때 router.prefetch 한 번). 로컬 측정에서 첫 로딩(MISS) 시간은 거의 안 달라졌고(ISR은 전체를 다 만든 뒤 응답해 Suspense 스트리밍 효과 없음), 실제 효과는 icn1·예열에 달림. build·test 587개 통과, 프리뷰 확인 안 함(사용자 지시로 머지)
@@ -182,6 +183,7 @@
 - 메인 순서: 이벤트 배너(900px 미만에서는 한 줄 띠) → h1 → 설명 → 검색 → 인원 → 내 PC 바 → 인원별 추천 → 빠른 칩 3개 → 찜 추천 → 지금 뜨는 게임 → 이번주의 게임(h2 제목 + 이번 주 할인 마감 링크) → 스트리머 → 인기 게시물(기준 이상일 때만)
 
 ## 진행 중
+- 머지 후 확인 대기(사용자): fix/search-and-games — select-screen.com 헤더 검색 결과, Network에서 /api/games/list 차단 시 실패 문구·"다시 시도", 새 게임 3개 상세. Split Brain Samsara min_players가 비어 있음(max 2)
 - 머지 후 확인 대기(사용자): feat/staff-pick — select-screen.com에서 4명·빈 입력일 때 Big Walk 1번, 공포를 고르면 AI 3장, "다시 골라줘" 뒤 AI 3장, 375px 태그·브래킷. security-check에는 staff_picks 권한 점검이 없음(11/26 anon 읽기 차단은 따로 확인)
 - 설정 대기(사용자): perf/curator-isr — Supabase 대시보드 Database → Webhooks에서 curators·curator_posts(Insert·Update·Delete) 웹훅을 만들어 POST https://select-screen.com/api/admin/revalidate, 헤더 x-admin-key(ADMIN_REVALIDATE_KEY 값)·Content-Type application/json으로 보내기. 그 전에는 SQL로 동의·게시물을 바꾼 뒤 직접 revalidate를 불러야 함(안 하면 최대 24시간 지연). 운영에서 curators 한 행 수정 뒤 /c/<핸들> 반영 확인
 - 큐레이터 대기열 SQL 실행 대기(사용자): 겜로그 게시물 10개(게임 20개) — /workspaces/reports/gamelog-queue.sql. 실행 뒤 import-curator-queue 미리보기 → --apply로 가져오기. 가져온 appid: One More Lawn 5378110·TANUKI 3218570·HANDS OVER 4661070·QUIET 4228630·Dumpster Gang 2870790·Crypto in a Haystack 5330680·Mayday Airways 5460910·River Drift 4382680·Red Rust Pioneers 3664440·예비군 5367010·Grave Mistakes(기막힌 상조회사) 4635290·My Dirty Little Lake 5375170·Supermarket Chaos 4800590·Never Sort By Color 4876650·DinoBones 5064340·Bunker Tidy Up 5212940·Tidy Up the Flower Shop 5221510·Leaf it Alone 3981100·Orion Blue 4264000·HAPPY PROPAGANDA 4950600
