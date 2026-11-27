@@ -44,7 +44,7 @@ export default function HeaderSearch() {
   const [sel, setSel] = useState(0);
   const wrap = useRef<HTMLSpanElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const { games } = useGameIndex({ enabled: armed });
+  const { games, error, retry } = useGameIndex({ enabled: armed });
   const query = q.trim();
 
   const results = useMemo(() => {
@@ -114,7 +114,9 @@ export default function HeaderSearch() {
         </label>
         {show && (
           <div className="hs-drop" id="hs-list" role="listbox" aria-label="게임 검색 미리보기">
-            {!games ? (
+            {!games && error ? (
+              <p className="hs-none" role="alert">검색을 불러오지 못했어요 · <button type="button" className="hs-retry" onClick={() => { retry(); input.current?.focus(); }}>다시 시도</button></p>
+            ) : !games ? (
               <p className="hs-none">게임 목록을 불러오는 중이에요</p>
             ) : results.length > 0 ? (
               <div className="hs-list">
