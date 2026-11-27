@@ -1,11 +1,13 @@
 // scripts/backfill-price-history-other.mjs
 // 스팀 외 유료 게임(에픽·블리자드)의 할인 기록을 ITAD에서 가져오기 — 이미 있는 기록은 건너뛰고 새 기록만 추가
+// 역대 최저가(lowest_price*)는 가격 기록이 2일 이상일 때만 저장 (lib/lowest-price)
 // 한 번 찾은 ITAD ID는 games.itad_id에 저장해서 다음부터는 lookup을 건너뜀
 // 가격 기록을 못 받은 게임(매칭 실패·상점 기록 없음·오류)은 games.price_check_*에 표시 → daily-summary가 3일 연속 실패를 알림
 import { createClient } from '@supabase/supabase-js';
 import { lookupItadId, getPriceHistory, ItadLimitError } from './lib/itad.mjs';
 import { markPriceStatus, noPriceIds, recordPriceCheck } from './lib/price-check.mjs';
 import { recordChangedGames } from './lib/revalidateGames.mjs';
+import { lowestFromHistory } from './lib/lowest-price.mjs';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -104,14 +106,15 @@ async function main() {
         continue;
       }
 
-      const all = [...(game.price_history || []).filter((p) => p.price >= 100), ...rows];
-      const lowest = all.reduce((a, b) => (b.price < a.price ? b : a));
-      await supabase
-        .from('games')
-        .update({ lowest_price: lowest.price, lowest_price_date: lowest.checked_at })
-        .eq('id', game.id);
+      const lowest = lowestFromHistory([...(game.price_history || []), ...rows]);
+      if (lowest) {
+        await supabase
+          .from('games')
+          .update({ lowest_price: lowest.price, lowest_price_date: lowest.checked_at })
+          .eq('id', game.id);
+      }
 
-      console.log(`✅ ${game.name}: ${records[0].shop.name} 새 기록 ${rows.length}개 · 최저 ₩${lowest.price.toLocaleString('ko-KR')}`);
+      console.log(`✅ ${game.name}: ${records[0].shop.name} 새 기록 ${rows.length}개 · ${lowest ? `최저 ₩${lowest.price.toLocaleString('ko-KR')}` : '기록이 하루치라 최저가는 저장 안 함'}`);
       saved++;
       changed.add(game.id);
     } catch (e) {

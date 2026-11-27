@@ -25,6 +25,7 @@ export const NEW_GAME_STEPS = [
   ['fill-activities-v2', '--apply', '--yes', '--new-days', 'DAYS', '--limit', 'ACT_MAX', 'IDS'], // 가능한 활동 (Sonnet 5.5 배치, 한 번에 최대 ACT_MAX개 — 넘는 건 weekly가 채움)
   ['fill-english-names', '--apply', 'IDS'],
   ['enrich-update-date', 'IDS'],
+  ['enrich-itad-heat', 'IDS'], // 역대 최저가·인기 순위 (ITAD, 출시된 스팀 게임만 — 출시 예정은 건너뜀)
 ];
 
 export function stepArgs(step, { idsFile, funIdsFile, days, actMax }) {

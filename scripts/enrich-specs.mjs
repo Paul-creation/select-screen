@@ -1,6 +1,7 @@
 // scripts/enrich-specs.mjs
 // 스팀 상점 정보(사양·출시일·한국어·용량 등)로 정보가 빈 게임만 채우기 — 이미 있는 값은 덮어쓰지 않음
 // 실행: node --env-file=.env.local scripts/enrich-specs.mjs
+// 역대 최저가(lowest_price*)는 쓰지 않음 — 우리 price_history는 기록이 하루치뿐일 수 있어 "역대"라고 할 수 없다. 스팀 게임은 enrich-itad-heat(ITAD)만 기록
 import { createClient } from '@supabase/supabase-js';
 import { onlyIds } from './lib/only-ids.mjs';
 import { parseKoreanSupport } from './lib/korean-support.mjs';
@@ -108,24 +109,6 @@ async function getAchievementCount(appid) {
   } catch { return null; }
 }
 
-async function getLowestPrice(gameId) {
-  try {
-    const { data } = await supabase
-      .from('price_history')
-      .select('price, discount_percent, checked_at')
-      .eq('game_id', gameId)
-      .order('price', { ascending: true })
-      .limit(1)
-      .single();
-    if (!data || !data.price) return null;
-    if (data.price < 100) return null;
-    return {
-      price: data.price,
-      date: data.checked_at?.slice(0, 10) ?? null,
-    };
-  } catch { return null; }
-}
-
 // 이 칸들이 비어 있으면 아직 스팀 정보를 못 채운 게임으로 본다
 const EMPTY_FILTER = 'min_spec.is.null,release_date.is.null';
 // 스팀 정보를 처음 채울 때만 정해지는 값 (추가할 때 기본값 false라서 빈 게임이면 스팀 값으로 바꾼다)
@@ -134,7 +117,7 @@ const STEAM_FLAGS = ['has_dlc', 'family_sharing', 'is_early_access', 'has_worksh
 async function main() {
   const { data: games, error: loadError } = await onlyIds(supabase
     .from('games')
-    .select('id, name, steam_appid, tags, min_spec, recommended_spec, release_date, korean_support, storage_gb, achievement_count, min_players, max_players, solo_playable, solo_mode, review_positive_percent, review_total, lowest_price, lowest_price_date').eq('hidden', false)
+    .select('id, name, steam_appid, tags, min_spec, recommended_spec, release_date, korean_support, storage_gb, achievement_count, min_players, max_players, solo_playable, solo_mode, review_positive_percent, review_total').eq('hidden', false)
     .not('steam_appid', 'is', null)
     .or(EMPTY_FILTER));
   if (loadError) return console.error(`❌ 게임 목록을 못 불러옴: ${loadError.message}`);
@@ -200,10 +183,9 @@ async function main() {
 
     // 출시일은 한국어 응답에서 먼저 읽고, 못 읽을 때만 영어로 한 번 더 요청
     const releaseDate = parseKoreanDate(data.release_date?.date) ?? await getEnglishReleaseDate(game.steam_appid);
-    const [reviews, achievements, lowestPriceData] = await Promise.all([
+    const [reviews, achievements] = await Promise.all([
       getReviewStats(game.steam_appid),
       getAchievementCount(game.steam_appid),
-      getLowestPrice(game.id),
     ]);
 
     const minSpec = parseMinSpecOnly(data.pc_requirements?.minimum);
@@ -223,8 +205,6 @@ async function main() {
       solo_playable: soloPlayable,
       review_positive_percent: reviews?.percent ?? null,
       review_total: reviews?.total ?? null,
-      lowest_price: lowestPriceData?.price ?? null,
-      lowest_price_date: lowestPriceData?.date ?? null,
     };
     // 빈 칸만 채운다 (다른 스크립트나 직접 넣은 값은 그대로)
     const update = Object.fromEntries(
